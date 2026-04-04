@@ -92,33 +92,73 @@ h1, h2, h3 {
 }
 
 .player-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
     list-style: none;
-    max-height: 150px;
+    max-height: 250px;
     overflow-y: auto;
     margin-bottom: 20px;
-    text-align: left;
-    padding: 0;
+    width: 100%;
+    padding: 10px 0;
 }
 
 .player-list li {
-    background: rgba(255, 255, 255, 0.1);
-    margin-bottom: 5px;
-    padding: 8px 15px;
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: 110px;
+    padding: 15px 10px;
+    border-radius: 8px;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    border-left: 3px solid var(--primary-neon);
+    border-top: 3px solid var(--primary-neon);
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.lobby-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.lobby-avatar {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    filter: drop-shadow(0 0 5px var(--secondary-neon));
+}
+
+.lobby-name {
+    font-size: 0.95rem;
+    font-weight: bold;
+    text-align: center;
+    word-break: break-all;
 }
 
 .remove-btn {
-    background: red;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 0, 0, 0.7);
     color: white;
     border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
     cursor: pointer;
     font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-btn:hover {
+    background: red;
 }
 
 
@@ -193,6 +233,105 @@ button:disabled {
     box-shadow: inset 0 0 50px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.3);
 }
 
+/* Overlay Stats & Scoreboard */
+#overlay-stats {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--secondary-neon);
+    text-shadow: 0 0 8px var(--secondary-neon);
+    z-index: 100;
+}
+
+#scoreboard {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    z-index: 100;
+    width: 95%;
+    flex-wrap: wrap;
+    pointer-events: none;
+}
+
+.score-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(10, 10, 15, 0.7);
+    padding: 5px 15px 5px 5px;
+    border-radius: 30px;
+    border: 1px solid var(--secondary-neon);
+    color: white;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+    /* Prevent shrinking too much */
+    flex: 0 0 auto;
+}
+
+.score-card.eliminated-score {
+    opacity: 0.3;
+    filter: grayscale(1);
+    box-shadow: none;
+    border-color: #555;
+}
+
+.score-name {
+    font-weight: bold;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.score-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.score-kills {
+    color: var(--primary-neon);
+    font-weight: 900;
+    font-size: 1.1rem;
+    margin-left: 5px;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 5px var(--primary-neon);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+}
+
+.participant {
+    width: 144px;
+    height: 144px;
+    position: absolute;
+    /* transition will be set inline via JS but we can add some base rules here if needed */
+}
+
+.participant-label {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.1rem;
+    color: var(--primary-neon);
+    text-shadow: 0 0 5px black, 0 0 10px black, 0 0 15px black, 2px 2px 2px black;
+    white-space: nowrap;
+    background: transparent;
+    padding: 2px 5px;
+    border: none;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+}
+
 #overlay-stats {
     position: absolute;
     top: 20px;
@@ -204,66 +343,57 @@ button:disabled {
     z-index: 10;
 }
 
-/* Participant Avatars (Chibi Sprites) */
-@keyframes runEast {
-    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_000.png'); }
-    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_001.png'); }
-    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_002.png'); }
-    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_003.png'); }
+/* -------------------------------------
+   TINY SWORDS KNIGHTS (144x144 Frames)
+   -------------------------------------*/
+.char-blue, .char-purple, .char-red, .char-yellow {
+    background-size: 864px 1152px; /* 6 cols, 8 rows scaled to 144px */
+    background-position: 0px -144px; /* row 2: Run */
+    animation: knight-run 0.6s steps(6) infinite;
 }
-@keyframes runWest {
-    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_000.png'); }
-    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_001.png'); }
-    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_002.png'); }
-    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_003.png'); }
-}
-@keyframes runNorth {
-    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_000.png'); }
-    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_001.png'); }
-    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_002.png'); }
-    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_003.png'); }
-}
-@keyframes runSouth {
-    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_000.png'); }
-    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_001.png'); }
-    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_002.png'); }
-    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_003.png'); }
+.char-blue { background-image: url('assets/knights/Warrior_Blue.png'); }
+.char-purple { background-image: url('assets/knights/Warrior_Purple.png'); }
+.char-red { background-image: url('assets/knights/Warrior_Red.png'); }
+.char-yellow { background-image: url('assets/knights/Warrior_Yellow.png'); }
+
+@keyframes knight-run {
+    from { background-position-x: 0px; }
+    to { background-position-x: -864px; }
 }
 
-.participant {
-    position: absolute;
-    width: 64px;
-    height: 64px;
-    background-size: contain; 
-    background-repeat: no-repeat;
-    background-position: center bottom;
-    image-rendering: auto; /* Since this might be a smoother chibi warrior */
-    transform-origin: center;
+/* Attack Modifier Class (Triggered via JS during dash sequence) */
+.char-blue.slashing, .char-purple.slashing, .char-red.slashing, .char-yellow.slashing {
+    background-position-y: -288px; /* row 3: Attack Side */
+    animation: knight-attack 0.4s steps(6) infinite;
 }
 
-.dir-east { animation: runEast 0.4s infinite; }
-.dir-west { animation: runWest 0.4s infinite; }
-.dir-north { animation: runNorth 0.4s infinite; }
-.dir-south { animation: runSouth 0.4s infinite; }
+@keyframes knight-attack {
+    from { background-position-x: 0px; }
+    to { background-position-x: -864px; }
+}
 
+/* Idle State (Used later for winner) */
+.winner .participant {
+    background-position-y: 0px; /* row 1: Idle */
+    animation: knight-idle 0.6s steps(6) infinite;
+}
+
+@keyframes knight-idle {
+    from { background-position-x: 0px; }
+    to { background-position-x: -864px; }
+}
+
+.flipped {
+    /* A helper class applied natively by Javascript to mirror sprites */
+    transform: scaleX(-1);
+}
+
+/* Dashing modifier for all */
 .participant.dashing {
     animation-duration: 0.15s; /* faster walk cycles when dashing */
 }
 
-.participant-label {
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.8rem;
-    color: #fff;
-    white-space: nowrap;
-    background: rgba(0,0,0,0.6);
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid var(--secondary-neon);
-    font-family: 'Orbitron', sans-serif;
-}
+
 
 /* Elimination Animation */
 @keyframes laserStrike {
@@ -279,25 +409,17 @@ button:disabled {
 
 /* Winner Animation */
 @keyframes championPulse {
-    0% { transform: scale(1); box-shadow: 0 0 20px gold; }
-    50% { transform: scale(1.1); box-shadow: 0 0 50px gold, 0 0 100px goldenrod; }
-    100% { transform: scale(1); box-shadow: 0 0 20px gold; }
+    0% { filter: drop-shadow(0 0 10px gold); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 25px goldenrod); transform: scale(1.1); }
+    100% { filter: drop-shadow(0 0 10px gold); transform: scale(1); }
 }
 
 .champion {
-    border-color: gold !important;
     z-index: 999;
 }
 
 #winner-avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background-size: cover;
-    background-position: center;
-    margin: 0 auto;
-    border: 4px solid gold;
-    animation: championPulse 2s infinite;
+    animation: championPulse 2s infinite, knight-idle 0.6s steps(6) infinite;
 }
 
 /* Slash effect elements */

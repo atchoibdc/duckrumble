@@ -15,8 +15,10 @@ const restartBtn = document.getElementById('restart-btn');
 let participants = []; // { id, name, hue, x, y, vx, vy, el, active }
 let animationId = null;
 let eliminationInterval = null;
-const AVATAR_SIZE = 64;
+const AVATAR_SIZE = 144;
 const SPEED = 2;
+
+const CHARACTER_CLASSES = ['char-blue', 'char-purple', 'char-red', 'char-yellow'];
 
 // The Chibi Warrior sprite is now handled purely in CSS via background-image animations.
 // It will dynamically use the hue tint given to it.
@@ -28,8 +30,11 @@ function addPlayer(name) {
     
     // Give them a random color hue
     const hue = Math.floor(Math.random() * 360);
+    // Random avatar (1 to 25)
+    const avatarNum = String(Math.floor(Math.random() * 25) + 1).padStart(2, '0');
+    const avatar = `assets/avatars/Avatars_${avatarNum}.png`;
     
-    participants.push({ name: name.trim(), hue });
+    participants.push({ name: name.trim(), hue, avatar });
     playerNameInput.value = '';
     updateSetupUI();
 }
@@ -56,13 +61,29 @@ function updateSetupUI() {
     playerList.innerHTML = '';
     participants.forEach((p, index) => {
         const li = document.createElement('li');
-        li.textContent = p.name;
+        
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'lobby-info';
+        
+        const avatarImg = document.createElement('img');
+        avatarImg.src = p.avatar;
+        avatarImg.className = 'lobby-avatar';
+        // Apply hue rotation and preserve the neon drop-shadow contour
+        avatarImg.style.filter = `hue-rotate(${p.hue}deg) drop-shadow(0 0 5px var(--secondary-neon))`;
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.textContent = p.name;
+        nameDiv.className = 'lobby-name';
+        
+        infoDiv.appendChild(avatarImg);
+        infoDiv.appendChild(nameDiv);
         
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-btn';
         removeBtn.textContent = 'X';
         removeBtn.onclick = () => removePlayer(index);
         
+        li.appendChild(infoDiv);
         li.appendChild(removeBtn);
         playerList.appendChild(li);
     });
@@ -82,14 +103,16 @@ startBtn.addEventListener('click', () => {
 });
 
 function initArena() {
-    arena.innerHTML = '<div id="overlay-stats">Contenders Left: <span id="active-count">0</span></div>';
+    arena.innerHTML = '<div id="overlay-stats">Contenders Left: <span id="active-count">0</span></div><div id="scoreboard"></div>';
     
     const arenaRect = arena.getBoundingClientRect();
     
     // Initialize participant objects
     participants = participants.map((p, index) => {
+        const charClass = CHARACTER_CLASSES[Math.floor(Math.random() * CHARACTER_CLASSES.length)];
         const el = document.createElement('div');
-        el.className = 'participant dir-east'; // start facing right
+        // Initialize base class
+        el.className = `participant ${charClass}`;
         el.style.filter = `hue-rotate(${p.hue}deg)`;
         
         // Label
@@ -113,10 +136,26 @@ function initArena() {
             id: index,
             name: p.name,
             hue: p.hue,
-            x, y, vx, vy, el,
+            avatar: p.avatar,
+            x, y, vx, vy, el, charClass,
             active: true,
-            dashing: false
+            dashing: false,
+            kills: 0
         };
+    });
+    
+    // Build Scoreboard
+    const scoreboard = document.getElementById('scoreboard');
+    participants.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'score-card';
+        card.id = `score-card-${p.id}`;
+        card.innerHTML = `
+            <img src="${p.avatar}" class="score-avatar" style="filter: hue-rotate(${p.hue}deg) drop-shadow(0 0 3px var(--secondary-neon))">
+            <div class="score-name">${p.name}</div>
+            <div class="score-kills" id="score-kills-${p.id}">⚔️ 0</div>
+        `;
+        scoreboard.appendChild(card);
     });
     
     updateActiveCount();
@@ -142,25 +181,25 @@ function gameLoop() {
         if (p.y <= 0) { p.y = 0; p.vy *= -1; }
         if (p.y + AVATAR_SIZE >= arenaRect.height) { p.y = arenaRect.height - AVATAR_SIZE; p.vy *= -1; }
         
-        // Deduce directional component strictly via velocity
-        let dir = 'east';
-        if (Math.abs(p.vx) > Math.abs(p.vy)) {
-            dir = p.vx > 0 ? 'east' : 'west';
-        } else {
-            dir = p.vy > 0 ? 'south' : 'north';
+        // Deduce directional component
+        let extraClass = '';
+        if (p.dashing) extraClass += ' dashing';
+        if (p.el.classList.contains('slashing')) extraClass += ' slashing';
+        
+        let flipTransform = '';
+        let flipped = p.vx < 0;
+        if (p.active && !p.el.classList.contains('eliminated')) {
+            p.el.className = `participant ${p.charClass}${extraClass}`;
+            if (flipped) {
+                flipTransform = ' scaleX(-1)';
+            }
         }
 
         // Apply baseline transform
-        p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
-        
-        let extraClass = '';
-        if (p.dashing) extraClass = ' dashing';
-        if (p.active && !p.el.classList.contains('eliminated')) {
-            p.el.className = `participant dir-${dir}${extraClass}`;
-        }
+        p.el.style.transform = `translate(${p.x}px, ${p.y}px)${flipTransform}`;
         
         // Ensure name label remains unflipped and properly centered
-        p.el.querySelector('.participant-label').style.transform = `translateX(-50%)`;
+        p.el.querySelector('.participant-label').style.transform = `translateX(-50%)${flipTransform ? ' scaleX(-1)' : ''}`;
     });
     
     animationId = requestAnimationFrame(gameLoop);
@@ -191,6 +230,7 @@ function eliminateRandomParticipant() {
     // Suspend typical attacker logic to DASH at target
     attacker.dashing = true;
     attacker.el.classList.add('dashing');
+    attacker.el.classList.add('slashing');
     attacker.vx = 0;
     attacker.vy = 0;
     attacker.el.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -204,9 +244,10 @@ function eliminateRandomParticipant() {
     attacker.x = clashX;
     attacker.y = clashY;
     // Force face target during dash
-    const faceDir = dx > 0 ? 'east' : 'west';
-    attacker.el.className = `participant dir-${faceDir} dashing`;
-    attacker.el.style.transform = `translate(${attacker.x}px, ${attacker.y}px)`;
+    const isFacingLeft = dx < 0;
+    attacker.el.className = `participant ${attacker.charClass} dashing slashing`;
+    attacker.el.style.transform = `translate(${attacker.x}px, ${attacker.y}px)${isFacingLeft ? ' scaleX(-1)' : ''}`;
+    attacker.el.querySelector('.participant-label').style.transform = `translateX(-50%)${isFacingLeft ? ' scaleX(-1)' : ''}`;
 
     // Wait for dash to physically complete, then Slash
     setTimeout(() => {
@@ -218,6 +259,19 @@ function eliminateRandomParticipant() {
         target.el.classList.add('eliminated');
         updateActiveCount();
         
+        // Update the live scoreboard
+        attacker.kills++;
+        const scoreKillsEl = document.getElementById(`score-kills-${attacker.id}`);
+        if(scoreKillsEl) {
+            scoreKillsEl.textContent = `⚔️ ${attacker.kills}`;
+            // Optional little bump animation on kill gain
+            scoreKillsEl.style.transform = "scale(1.5)";
+            setTimeout(() => scoreKillsEl.style.transform = "scale(1)", 200);
+        }
+        
+        const targetScoreCard = document.getElementById(`score-card-${target.id}`);
+        if (targetScoreCard) targetScoreCard.classList.add('eliminated-score');
+        
         // Let attacker resume bouncing
         attacker.el.style.transition = 'none';
         const angle = Math.random() * Math.PI * 2;
@@ -225,6 +279,7 @@ function eliminateRandomParticipant() {
         attacker.vy = Math.sin(angle) * SPEED;
         attacker.dashing = false;
         attacker.el.classList.remove('dashing');
+        attacker.el.classList.remove('slashing');
         
         // Check if 1 winner left
         const remaining = participants.filter(p => p.active);
@@ -266,16 +321,12 @@ function declareWinner() {
         
         // Keep the text oriented correctly
         winner.el.querySelector('.participant-label').style.transform = `translateX(-50%)`;
-        
-        // Show winner modal (idle south frame works best for mugshot)
-        winnerAvatarEl.className = 'dir-south';
-        winnerAvatarEl.style.backgroundImage = "url('assets/warrior/animations/running-4-frames/south/frame_000.png')";
-        winnerAvatarEl.style.backgroundSize = "contain";
-        winnerAvatarEl.style.backgroundRepeat = "no-repeat";
-        winnerAvatarEl.style.backgroundPosition = "center center";
-        winnerAvatarEl.style.width = "64px";
-        winnerAvatarEl.style.height = "64px";
-        winnerAvatarEl.style.margin = "0 auto";
+        // Show winner modal using CSS classes
+        winnerAvatarEl.className = `participant ${winner.charClass}`;
+        winnerAvatarEl.style.filter = `hue-rotate(${winner.hue}deg)`;
+        winnerAvatarEl.style.transform = 'scale(1.5)';
+        winnerAvatarEl.style.position = 'relative';
+        winnerAvatarEl.style.margin = '0 auto';
         winnerAvatarEl.style.filter = `hue-rotate(${winner.hue}deg)`;
         
         document.querySelector('.winner-title').innerHTML = `CHAMPION<br/>${winner.name}`;
