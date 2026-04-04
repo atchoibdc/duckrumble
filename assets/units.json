@@ -8,24 +8,30 @@
     },
     "classes": {
         "Warrior": { 
+            "visualScale": 1.0,
             "sprites": {
-                "idle": { "file": "Warrior_Idle.png", "frames": 8 }, 
-                "run": { "file": "Warrior_Run.png", "frames": 6 }, 
-                "attack": { "file": "Warrior_Attack1.png", "frames": 4 } 
+                "idle":   { "file": "Warrior_Idle.png",     "frames": 8,  "frameW": 192, "frameH": 192 }, 
+                "run":    { "file": "Warrior_Run.png",      "frames": 6,  "frameW": 192, "frameH": 192 }, 
+                "attack": { "file": "Warrior_Attack1.png", "frames": 4,  "frameW": 192, "frameH": 192 },
+                "dead":   { "file": "../../Dead.png",      "frames": 7,  "frameW": 128, "frameH": 128 } 
             }
         },
         "Lancer": { 
+            "visualScale": 1.5,
             "sprites": {
-                "idle": { "file": "Lancer_Idle.png", "frames": 12 }, 
-                "run": { "file": "Lancer_Run.png", "frames": 6 }, 
-                "attack": { "file": "Lancer_Right_Attack.png", "frames": 3 } 
+                "idle":   { "file": "Lancer_Idle.png",          "frames": 12, "frameW": 320, "frameH": 320 }, 
+                "run":    { "file": "Lancer_Run.png",           "frames": 6,  "frameW": 320, "frameH": 320 }, 
+                "attack": { "file": "Lancer_Right_Attack.png", "frames": 3,  "frameW": 320, "frameH": 320 },
+                "dead":   { "file": "../../Dead.png",          "frames": 7,  "frameW": 128, "frameH": 128 } 
             }
         },
         "Monk": { 
+            "visualScale": 1.0,
             "sprites": {
-                "idle": { "file": "Idle.png", "frames": 6 }, 
-                "run": { "file": "Run.png", "frames": 4 }, 
-                "attack": { "file": "Heal.png", "frames": 11 } 
+                "idle":   { "file": "Idle.png",  "frames": 6,  "frameW": 192, "frameH": 192 }, 
+                "run":    { "file": "Run.png",   "frames": 4,  "frameW": 192, "frameH": 192 }, 
+                "attack": { "file": "Heal.png",  "frames": 11, "frameW": 192, "frameH": 192 },
+                "dead":   { "file": "../../Dead.png", "frames": 7,  "frameW": 128, "frameH": 128 } 
             }
         }
     }

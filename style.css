@@ -49,7 +49,8 @@ h1, h2, h3 {
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0,0,0,0.8);
     z-index: 100;
-    min-width: 400px;
+    min-width: 650px;
+    max-width: 90vw;
 }
 
 .glow-text {
@@ -98,7 +99,7 @@ h1, h2, h3 {
     flex-wrap: wrap;
     gap: 10px;
     list-style: none;
-    max-height: 250px;
+    max-height: 550px;
     overflow-y: auto;
     margin-bottom: 20px;
     width: 100%;
@@ -107,7 +108,7 @@ h1, h2, h3 {
 
 .player-list li {
     background: var(--iron-dark);
-    flex: 1 1 calc(33.333% - 10px);
+    flex: 1 1 calc(25% - 10px);
     min-width: 110px;
     padding: 15px 10px;
     border-radius: 8px;
@@ -238,6 +239,25 @@ button:disabled {
 }
 
 /* Overlay Stats & Scoreboard */
+#countdown-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    font-size: 8rem;
+    color: var(--primary-gold);
+    text-shadow: 0 0 20px rgba(0,0,0,0.9), 0 0 10px rgba(255, 215, 0, 0.5);
+    z-index: 1000;
+    pointer-events: none;
+    font-family: 'MedievalSharp', cursive;
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.countdown-pulse {
+    transform: translate(-50%, -50%) scale(1.5) !important;
+    opacity: 0;
+}
+
 #overlay-stats {
     position: absolute;
     bottom: 15px;
@@ -335,6 +355,32 @@ button:disabled {
     letter-spacing: 1px;
 }
 
+/* Health Bar Styles */
+.health-bar {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 3px;
+    z-index: 10;
+}
+
+.health-segment {
+    width: 12px;
+    height: 12px;
+    background-color: #27ae60;
+    border: 1px solid #145a32;
+    border-radius: 2px;
+    box-shadow: 0 0 3px rgba(0,0,0,0.8);
+    transition: background-color 0.3s;
+}
+
+.health-segment.lost {
+    background-color: transparent;
+    border-color: #7b241c;
+}
+
 /* -------------------------------------
    MULTI-CLASS DYNAMIC UNIT ENGINE
    -------------------------------------*/
@@ -347,12 +393,8 @@ button:disabled {
     background-size: 864px 144px; 
 }
 
-@keyframes sprite-cycle-3 { to { background-position: -432px 0px; } }
-@keyframes sprite-cycle-4 { to { background-position: -576px 0px; } }
-@keyframes sprite-cycle-6 { to { background-position: -864px 0px; } }
-@keyframes sprite-cycle-8 { to { background-position: -1152px 0px; } }
-@keyframes sprite-cycle-11 { to { background-position: -1584px 0px; } }
-@keyframes sprite-cycle-12 { to { background-position: -1728px 0px; } }
+/* Single universal keyframe — end position is injected per-unit via JS as --sprite-step-w */
+@keyframes sprite-cycle { to { background-position-x: var(--sprite-step-w, -864px); } }
 
 .state-idle {
     background-image: var(--anim-idle);
@@ -383,13 +425,13 @@ button:disabled {
 
 /* Physical Elimination Animation */
 @keyframes bloodFade {
-    0% { transform: scale(1); filter: brightness(1); }
-    50% { transform: scale(1.2); filter: brightness(0.5) sepia(1) hue-rotate(320deg) saturate(3); opacity: 0.8; }
-    100% { transform: scale(0.5) translateY(20px); opacity: 0; filter: grayscale(1); }
+    0% { transform: translate(var(--p-x), var(--p-y)) scale(var(--p-scale, 1)) scaleX(var(--p-flip, 1)); filter: brightness(1); }
+    50% { transform: translate(var(--p-x), var(--p-y)) scale(calc(var(--p-scale, 1) * 1.2)) scaleX(var(--p-flip, 1)); filter: brightness(0.5) sepia(1) hue-rotate(320deg) saturate(3); opacity: 0.8; }
+    100% { transform: translate(var(--p-x), calc(var(--p-y) + 30px)) scale(calc(var(--p-scale, 1) * 0.5)) scaleX(var(--p-flip, 1)); opacity: 0; filter: grayscale(1); }
 }
 
 .eliminated {
-    animation: bloodFade 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    /* Elimination animation composite handled in JS inline */
     pointer-events: none;
 }
 
