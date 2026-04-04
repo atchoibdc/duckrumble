@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuckRumble Arena - Battle Royale</title>
+    <link rel="stylesheet" href="style.css?v=spriteupdate">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Setup Dashboard -->
+    <div id="setup-dashboard" class="glass-panel">
+        <h1 class="glow-text">DUCKRUMBLE<br/><span class="subtext">ARENA</span></h1>
+        
+        <div class="name-entry-zone" id="name-entry-zone">
+            <input type="text" id="player-name" placeholder="Enter Player Name..." autocomplete="off">
+            <button id="add-player-btn" class="secondary-btn">Add Player</button>
+        </div>
+
+        <ul id="player-list" class="player-list"></ul>
+
+        <div class="status">
+            Combatants Enrolled: <span id="participant-count" class="highlight">0</span>
+        </div>
+
+        <div class="actions">
+            <button id="start-btn" class="primary-btn" disabled>ENTER THE ARENA</button>
+        </div>
+    </div>
+
+    <!-- Arena Container -->
+    <div id="arena" class="hidden">
+        <!-- Avatars will be injected here -->
+        
+        <div id="overlay-stats">
+            Contenders Left: <span id="active-count">0</span>
+        </div>
+    </div>
+
+    <!-- Winner Modal -->
+    <div id="winner-modal" class="glass-panel hidden">
+        <h2 class="glow-text winner-title">WE HAVE A CHAMPION!</h2>
+        <div id="winner-avatar-container">
+            <div id="winner-avatar"></div>
+        </div>
+        <button id="restart-btn" class="primary-btn" style="margin-top:20px;">Play Again</button>
+    </div>
+
+    <script src="app.js?v=test2"></script>
+</body>
+</html>

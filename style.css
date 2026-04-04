@@ -1,0 +1,321 @@
+/* Cyberpunk Battle Royale Theme */
+:root {
+    --bg-color: #05050A;
+    --primary-neon: #ff007f;
+    --secondary-neon: #00f0ff;
+    --glass-bg: rgba(10, 10, 20, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-glow: 0 0 10px var(--primary-neon), 0 0 20px var(--primary-neon);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+    background-image: 
+        radial-gradient(circle at center, rgba(255, 0, 127, 0.1) 0%, transparent 50%),
+        linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+h1, h2, h3 {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Glassmorphism Panel */
+.glass-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 0, 127, 0.2);
+    z-index: 100;
+    min-width: 400px;
+}
+
+.glow-text {
+    color: #fff;
+    text-shadow: var(--text-glow);
+    font-size: 3rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.subtext {
+    color: var(--secondary-neon);
+    text-shadow: 0 0 10px var(--secondary-neon);
+    font-size: 1.5rem;
+}
+
+/* Name Entry Zone */
+.name-entry-zone {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+#player-name {
+    flex: 1;
+    padding: 10px;
+    background: rgba(0, 240, 255, 0.05);
+    border: 2px solid var(--secondary-neon);
+    border-radius: 8px;
+    color: white;
+    font-size: 1.1rem;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+}
+
+#player-name:focus {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+}
+
+.player-list {
+    list-style: none;
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    text-align: left;
+    padding: 0;
+}
+
+.player-list li {
+    background: rgba(255, 255, 255, 0.1);
+    margin-bottom: 5px;
+    padding: 8px 15px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 3px solid var(--primary-neon);
+}
+
+.remove-btn {
+    background: red;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+
+.status {
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+}
+
+.highlight {
+    color: var(--primary-neon);
+    font-weight: bold;
+    font-size: 1.3rem;
+    text-shadow: 0 0 5px var(--primary-neon);
+}
+
+/* Buttons */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+button {
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.primary-btn {
+    background: linear-gradient(45deg, var(--primary-neon), #ff4d94);
+    color: white;
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+}
+
+.primary-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(255, 0, 127, 0.8), 0 0 10px white;
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 2px solid var(--secondary-neon);
+    color: var(--secondary-neon);
+}
+
+.secondary-btn:hover {
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+}
+
+/* Arena Overlay */
+#arena {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    /* Red glowing borders */
+    box-shadow: inset 0 0 50px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+#overlay-stats {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--secondary-neon);
+    text-shadow: 0 0 10px var(--secondary-neon);
+    z-index: 10;
+}
+
+/* Participant Avatars (Chibi Sprites) */
+@keyframes runEast {
+    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_000.png'); }
+    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_001.png'); }
+    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_002.png'); }
+    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/east/frame_003.png'); }
+}
+@keyframes runWest {
+    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_000.png'); }
+    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_001.png'); }
+    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_002.png'); }
+    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/west/frame_003.png'); }
+}
+@keyframes runNorth {
+    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_000.png'); }
+    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_001.png'); }
+    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_002.png'); }
+    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/north/frame_003.png'); }
+}
+@keyframes runSouth {
+    0%, 24.99% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_000.png'); }
+    25%, 49.99% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_001.png'); }
+    50%, 74.99% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_002.png'); }
+    75%, 100% { background-image: url('assets/warrior/animations/running-4-frames/south/frame_003.png'); }
+}
+
+.participant {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    background-size: contain; 
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    image-rendering: auto; /* Since this might be a smoother chibi warrior */
+    transform-origin: center;
+}
+
+.dir-east { animation: runEast 0.4s infinite; }
+.dir-west { animation: runWest 0.4s infinite; }
+.dir-north { animation: runNorth 0.4s infinite; }
+.dir-south { animation: runSouth 0.4s infinite; }
+
+.participant.dashing {
+    animation-duration: 0.15s; /* faster walk cycles when dashing */
+}
+
+.participant-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    color: #fff;
+    white-space: nowrap;
+    background: rgba(0,0,0,0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--secondary-neon);
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Elimination Animation */
+@keyframes laserStrike {
+    0% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.5); filter: brightness(3) hue-rotate(90deg); box-shadow: 0 0 50px red; border-color: red;}
+    100% { transform: scale(0); opacity: 0; }
+}
+
+.eliminated {
+    animation: laserStrike 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    pointer-events: none;
+}
+
+/* Winner Animation */
+@keyframes championPulse {
+    0% { transform: scale(1); box-shadow: 0 0 20px gold; }
+    50% { transform: scale(1.1); box-shadow: 0 0 50px gold, 0 0 100px goldenrod; }
+    100% { transform: scale(1); box-shadow: 0 0 20px gold; }
+}
+
+.champion {
+    border-color: gold !important;
+    z-index: 999;
+}
+
+#winner-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    margin: 0 auto;
+    border: 4px solid gold;
+    animation: championPulse 2s infinite;
+}
+
+/* Slash effect elements */
+.slash {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: transparent;
+    border-radius: 50%;
+    border-right: 6px solid var(--primary-neon);
+    border-top: 6px solid var(--primary-neon);
+    box-shadow: inset -5px 5px 15px rgba(255, 0, 127, 0.5), 5px -5px 15px rgba(255, 0, 127, 0.5);
+    z-index: 50;
+    pointer-events: none;
+    animation: slashAnim 0.3s ease-out forwards;
+}
+
+@keyframes slashAnim {
+    0% { transform: translate(-50%, -50%) rotate(-90deg) scale(0.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotate(45deg) scale(1.5); opacity: 0; }
+}

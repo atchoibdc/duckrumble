@@ -1,0 +1,7 @@
+{
+  "name": "duckrumble/arena",
+  "description": "DuckRumble Arena static site for Heroku",
+  "require": {
+    "php": "^7.4 || ^8.0"
+  }
+}
