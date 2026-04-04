@@ -12,29 +12,71 @@ const winnerAvatarEl = document.getElementById('winner-avatar');
 const restartBtn = document.getElementById('restart-btn');
 
 // Game State
-let participants = []; // { id, name, hue, x, y, vx, vy, el, active }
+let participants = []; // { id, name, color, unitClass, avatar, x, y, vx, vy, el, active }
 let animationId = null;
 let eliminationInterval = null;
 const AVATAR_SIZE = 144;
 const SPEED = 2;
 
-const CHARACTER_CLASSES = ['char-blue', 'char-purple', 'char-red', 'char-yellow'];
+let UNIT_COLORS = [];
+let COLOR_HEXMAP = {};
+let UNIT_CLASSES = [];
+let SPRITE_MAP = {};
 
-// The Chibi Warrior sprite is now handled purely in CSS via background-image animations.
-// It will dynamically use the hue tint given to it.
+// Disable entry until config loads
+playerNameInput.disabled = true;
+addPlayerBtn.disabled = true;
+playerNameInput.placeholder = "Loading game assets...";
+
+fetch('assets/units.json?v=' + Date.now())
+    .then(response => response.json())
+    .then(data => {
+        UNIT_COLORS = data.factions;
+        COLOR_HEXMAP = data.hexMap;
+        UNIT_CLASSES = Object.keys(data.classes);
+        
+        for (const [unitClass, config] of Object.entries(data.classes)) {
+            SPRITE_MAP[unitClass] = config.sprites;
+        }
+        
+        // Enable entry
+        playerNameInput.disabled = false;
+        addPlayerBtn.disabled = false;
+        playerNameInput.placeholder = "Enter Player Name...";
+    })
+    .catch(error => {
+        console.error("Error loading units configuration:", error);
+        playerNameInput.placeholder = "Error loading assets!";
+    });
+
+function updateParticipantState(p, stateKey) {
+    p.currentState = stateKey;
+    const f = p.frames[stateKey];
+    p.el.style.backgroundImage = `var(--anim-${stateKey})`;
+    p.el.style.backgroundSize = `${f * 144}px 144px`;
+    const dur = Math.max(0.4, f * 0.1).toFixed(2);
+    p.el.style.animationName = `sprite-cycle-${f}`;
+    p.el.style.animationDuration = `${dur}s`;
+    p.el.style.animationTimingFunction = `steps(${f})`;
+    p.el.style.animationIterationCount = `infinite`;
+}
+
+// The character engine relies on dynamically injected background-images via CSS vars
+// representing Idle, Run, and Attack animations.
 
 
 // Add Player Logic
 function addPlayer(name) {
     if (!name.trim()) return;
     
-    // Give them a random color hue
-    const hue = Math.floor(Math.random() * 360);
+    const color = UNIT_COLORS[Math.floor(Math.random() * UNIT_COLORS.length)];
+    const unitClass = UNIT_CLASSES[Math.floor(Math.random() * UNIT_CLASSES.length)];
+    
     // Random avatar (1 to 25)
     const avatarNum = String(Math.floor(Math.random() * 25) + 1).padStart(2, '0');
     const avatar = `assets/avatars/Avatars_${avatarNum}.png`;
     
-    participants.push({ name: name.trim(), hue, avatar });
+    participants.push({ name: name.trim(), color, unitClass, avatar });
     playerNameInput.value = '';
     updateSetupUI();
 }
@@ -68,12 +110,13 @@ function updateSetupUI() {
         const avatarImg = document.createElement('img');
         avatarImg.src = p.avatar;
         avatarImg.className = 'lobby-avatar';
-        // Apply hue rotation and preserve the neon drop-shadow contour
-        avatarImg.style.filter = `hue-rotate(${p.hue}deg) drop-shadow(0 0 5px var(--secondary-neon))`;
+        // Assign border color based on unit color
+        avatarImg.style.borderColor = COLOR_HEXMAP[p.color];
         
         const nameDiv = document.createElement('div');
         nameDiv.textContent = p.name;
         nameDiv.className = 'lobby-name';
+        nameDiv.style.color = COLOR_HEXMAP[p.color];
         
         infoDiv.appendChild(avatarImg);
         infoDiv.appendChild(nameDiv);
@@ -109,16 +152,22 @@ function initArena() {
     
     // Initialize participant objects
     participants = participants.map((p, index) => {
-        const charClass = CHARACTER_CLASSES[Math.floor(Math.random() * CHARACTER_CLASSES.length)];
         const el = document.createElement('div');
         // Initialize base class
-        el.className = `participant ${charClass}`;
-        el.style.filter = `hue-rotate(${p.hue}deg)`;
+        el.className = `participant state-run`;
+        
+        // Inject Dynamic Medieval Assets
+        const sprites = SPRITE_MAP[p.unitClass];
+        el.style.setProperty('--anim-idle', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.idle.file}')`);
+        el.style.setProperty('--anim-run', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.run.file}')`);
+        el.style.setProperty('--anim-attack', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.attack.file}')`);
         
         // Label
         const label = document.createElement('div');
         label.className = 'participant-label';
         label.textContent = p.name;
+        label.style.color = COLOR_HEXMAP[p.color];
+        label.style.textShadow = `-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px ${COLOR_HEXMAP[p.color]}`;
         el.appendChild(label);
         
         // Random start position within bounds
@@ -132,16 +181,25 @@ function initArena() {
         
         arena.appendChild(el);
         
-        return {
+        const participantObj = {
             id: index,
             name: p.name,
-            hue: p.hue,
+            color: p.color,
+            unitClass: p.unitClass,
             avatar: p.avatar,
-            x, y, vx, vy, el, charClass,
+            x, y, vx, vy, el,
             active: true,
             dashing: false,
-            kills: 0
+            kills: 0,
+            currentState: 'none',
+            frames: {
+                idle: sprites.idle.frames,
+                run: sprites.run.frames,
+                attack: sprites.attack.frames
+            }
         };
+        updateParticipantState(participantObj, 'run');
+        return participantObj;
     });
     
     // Build Scoreboard
@@ -151,8 +209,8 @@ function initArena() {
         card.className = 'score-card';
         card.id = `score-card-${p.id}`;
         card.innerHTML = `
-            <img src="${p.avatar}" class="score-avatar" style="filter: hue-rotate(${p.hue}deg) drop-shadow(0 0 3px var(--secondary-neon))">
-            <div class="score-name">${p.name}</div>
+            <img src="${p.avatar}" class="score-avatar" style="border: 2px solid ${COLOR_HEXMAP[p.color]};">
+            <div class="score-name" style="color: ${COLOR_HEXMAP[p.color]}">${p.name}</div>
             <div class="score-kills" id="score-kills-${p.id}">⚔️ 0</div>
         `;
         scoreboard.appendChild(card);
@@ -182,14 +240,22 @@ function gameLoop() {
         if (p.y + AVATAR_SIZE >= arenaRect.height) { p.y = arenaRect.height - AVATAR_SIZE; p.vy *= -1; }
         
         // Deduce directional component
+        let stateClass = 'state-run';
+        let stateKey = 'run';
+        if (p.el.classList.contains('state-attack')) {
+             stateClass = 'state-attack';
+             stateKey = 'attack';
+        }
         let extraClass = '';
         if (p.dashing) extraClass += ' dashing';
-        if (p.el.classList.contains('slashing')) extraClass += ' slashing';
         
         let flipTransform = '';
         let flipped = p.vx < 0;
         if (p.active && !p.el.classList.contains('eliminated')) {
-            p.el.className = `participant ${p.charClass}${extraClass}`;
+            p.el.className = `participant ${stateClass}${extraClass}`;
+            if (p.currentState !== stateKey) {
+                updateParticipantState(p, stateKey);
+            }
             if (flipped) {
                 flipTransform = ' scaleX(-1)';
             }
@@ -229,8 +295,8 @@ function eliminateRandomParticipant() {
     
     // Suspend typical attacker logic to DASH at target
     attacker.dashing = true;
-    attacker.el.classList.add('dashing');
-    attacker.el.classList.add('slashing');
+    attacker.el.classList.remove('state-run');
+    attacker.el.classList.add('state-attack');
     attacker.vx = 0;
     attacker.vy = 0;
     attacker.el.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
@@ -245,16 +311,16 @@ function eliminateRandomParticipant() {
     attacker.y = clashY;
     // Force face target during dash
     const isFacingLeft = dx < 0;
-    attacker.el.className = `participant ${attacker.charClass} dashing slashing`;
+    attacker.el.className = `participant state-attack dashing`;
     attacker.el.style.transform = `translate(${attacker.x}px, ${attacker.y}px)${isFacingLeft ? ' scaleX(-1)' : ''}`;
     attacker.el.querySelector('.participant-label').style.transform = `translateX(-50%)${isFacingLeft ? ' scaleX(-1)' : ''}`;
 
-    // Wait for dash to physically complete, then Slash
+        // Wait for dash to physically complete, then Slash
     setTimeout(() => {
         target.active = false;
         
         // Slash effect centered on target
-        drawSlash(target.x + AVATAR_SIZE/2, target.y + AVATAR_SIZE/2, attacker.hue);
+        drawSlash(target.x + AVATAR_SIZE/2, target.y + AVATAR_SIZE/2, COLOR_HEXMAP[attacker.color]);
         
         target.el.classList.add('eliminated');
         updateActiveCount();
@@ -278,8 +344,8 @@ function eliminateRandomParticipant() {
         attacker.vx = Math.cos(angle) * SPEED;
         attacker.vy = Math.sin(angle) * SPEED;
         attacker.dashing = false;
-        attacker.el.classList.remove('dashing');
-        attacker.el.classList.remove('slashing');
+        attacker.el.classList.remove('state-attack');
+        // Do not explicitly set classList.add('state-run') here, the `gameLoop()` applies the class correctly on the next frame based on dashing/attack states so it resets natively.
         
         // Check if 1 winner left
         const remaining = participants.filter(p => p.active);
@@ -290,12 +356,12 @@ function eliminateRandomParticipant() {
     }, 300);
 }
 
-function drawSlash(x, y, hue) {
+function drawSlash(x, y, colorHex) {
     const slash = document.createElement('div');
     slash.className = 'slash';
     
-    // Color slash to match attacker
-    slash.style.filter = `hue-rotate(${hue}deg)`;
+    // Color slash to match attacker's hex config
+    slash.style.borderTopColor = colorHex;
     slash.style.left = `${x}px`;
     slash.style.top = `${y}px`;
     
@@ -321,13 +387,23 @@ function declareWinner() {
         
         // Keep the text oriented correctly
         winner.el.querySelector('.participant-label').style.transform = `translateX(-50%)`;
+        
+        // Force the winner into idle animation explicitly
+        updateParticipantState(winner, 'idle');
+        
         // Show winner modal using CSS classes
-        winnerAvatarEl.className = `participant ${winner.charClass}`;
-        winnerAvatarEl.style.filter = `hue-rotate(${winner.hue}deg)`;
+        winnerAvatarEl.className = `participant state-idle`;
+        const winnerSprites = SPRITE_MAP[winner.unitClass];
+        const f = winnerSprites.idle.frames;
+        winnerAvatarEl.style.setProperty('--anim-idle', `url('assets/Units/${winner.color} Units/${winner.unitClass}/${winnerSprites.idle.file}')`);
+        winnerAvatarEl.style.backgroundImage = `var(--anim-idle)`;
+        winnerAvatarEl.style.backgroundSize = `${f * 144}px 144px`;
+        const dur = Math.max(0.4, f * 0.1).toFixed(2);
+        winnerAvatarEl.style.animation = `championPulse 2s infinite, sprite-cycle-${f} ${dur}s steps(${f}) infinite`;
+        
         winnerAvatarEl.style.transform = 'scale(1.5)';
         winnerAvatarEl.style.position = 'relative';
         winnerAvatarEl.style.margin = '0 auto';
-        winnerAvatarEl.style.filter = `hue-rotate(${winner.hue}deg)`;
         
         document.querySelector('.winner-title').innerHTML = `CHAMPION<br/>${winner.name}`;
         

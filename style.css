@@ -1,11 +1,12 @@
-/* Cyberpunk Battle Royale Theme */
+/* Medieval Battle Royale Theme */
 :root {
-    --bg-color: #05050A;
-    --primary-neon: #ff007f;
-    --secondary-neon: #00f0ff;
-    --glass-bg: rgba(10, 10, 20, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --text-glow: 0 0 10px var(--primary-neon), 0 0 20px var(--primary-neon);
+    --bg-color: #1a1c20;
+    --primary-gold: #d4af37;
+    --secondary-crimson: #8b0000;
+    --wood-bg: rgba(45, 30, 20, 0.95);
+    --gold-border: rgba(212, 175, 55, 0.7);
+    --text-shadow-classic: 2px 2px 4px rgba(0,0,0,0.8);
+    --iron-dark: #2c2f33;
 }
 
 * {
@@ -16,56 +17,55 @@
 
 body {
     background-color: var(--bg-color);
-    color: #fff;
-    font-family: 'Inter', sans-serif;
+    color: #e0d8c0;
+    font-family: 'Cinzel', serif;
     height: 100vh;
     width: 100vw;
     overflow: hidden;
     position: relative;
     background-image: 
-        radial-gradient(circle at center, rgba(255, 0, 127, 0.1) 0%, transparent 50%),
-        linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
-    background-size: 100% 100%, 40px 40px, 40px 40px;
+        radial-gradient(circle at center, rgba(139, 0, 0, 0.1) 0%, transparent 70%),
+        repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px);
 }
 
 h1, h2, h3 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'MedievalSharp', cursive;
 }
 
 .hidden {
     display: none !important;
 }
 
-/* Glassmorphism Panel */
+/* Wood/Parchment Panel */
 .glass-panel {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    background: var(--wood-bg);
+    border: 3px solid var(--primary-gold);
+    border-radius: 8px;
     padding: 40px;
     text-align: center;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 0, 127, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0,0,0,0.8);
     z-index: 100;
     min-width: 400px;
 }
 
 .glow-text {
-    color: #fff;
-    text-shadow: var(--text-glow);
-    font-size: 3rem;
+    color: var(--primary-gold);
+    text-shadow: var(--text-shadow-classic);
+    font-size: 3.5rem;
     margin-bottom: 20px;
     letter-spacing: 2px;
 }
 
 .subtext {
-    color: var(--secondary-neon);
-    text-shadow: 0 0 10px var(--secondary-neon);
+    color: var(--secondary-crimson);
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
     font-size: 1.5rem;
+    text-shadow: 1px 1px 2px black;
 }
 
 /* Name Entry Zone */
@@ -78,17 +78,19 @@ h1, h2, h3 {
 #player-name {
     flex: 1;
     padding: 10px;
-    background: rgba(0, 240, 255, 0.05);
-    border: 2px solid var(--secondary-neon);
-    border-radius: 8px;
-    color: white;
+    background: #f4ecd8;
+    border: 2px solid #8b5a2b;
+    border-radius: 4px;
+    color: #3e2723;
     font-size: 1.1rem;
     outline: none;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
 }
 
 #player-name:focus {
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 10px var(--primary-gold);
+    border-color: var(--primary-gold);
 }
 
 .player-list {
@@ -104,7 +106,7 @@ h1, h2, h3 {
 }
 
 .player-list li {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--iron-dark);
     flex: 1 1 calc(33.333% - 10px);
     min-width: 110px;
     padding: 15px 10px;
@@ -113,9 +115,9 @@ h1, h2, h3 {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-top: 3px solid var(--primary-neon);
+    border: 2px solid var(--primary-gold);
     position: relative;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 4px 6px rgba(0,0,0,0.5);
 }
 
 .lobby-info {
@@ -130,7 +132,9 @@ h1, h2, h3 {
     width: 56px;
     height: 56px;
     object-fit: cover;
-    filter: drop-shadow(0 0 5px var(--secondary-neon));
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));
+    border-radius: 50%;
+    border: 1px solid var(--primary-gold);
 }
 
 .lobby-name {
@@ -168,10 +172,10 @@ h1, h2, h3 {
 }
 
 .highlight {
-    color: var(--primary-neon);
+    color: var(--primary-gold);
     font-weight: bold;
     font-size: 1.3rem;
-    text-shadow: 0 0 5px var(--primary-neon);
+    text-shadow: 1px 1px 2px black;
 }
 
 /* Buttons */
@@ -182,13 +186,12 @@ h1, h2, h3 {
 }
 
 button {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'MedievalSharp', cursive;
     cursor: pointer;
     padding: 15px 20px;
-    border-radius: 8px;
-    border: none;
+    border-radius: 4px;
+    border: 2px solid var(--primary-gold);
     font-size: 1.1rem;
-    font-weight: bold;
     letter-spacing: 1px;
     transition: all 0.3s ease;
     text-transform: uppercase;
@@ -197,28 +200,29 @@ button {
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    filter: grayscale(1);
 }
 
 .primary-btn {
-    background: linear-gradient(45deg, var(--primary-neon), #ff4d94);
-    color: white;
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+    background: var(--secondary-crimson);
+    color: var(--primary-gold);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
 }
 
 .primary-btn:not(:disabled):hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 25px rgba(255, 0, 127, 0.8), 0 0 10px white;
+    background: #a00000;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 6px 12px rgba(0,0,0,0.5);
 }
 
 .secondary-btn {
-    background: transparent;
-    border: 2px solid var(--secondary-neon);
-    color: var(--secondary-neon);
+    background: var(--iron-dark);
+    color: #e0d8c0;
 }
 
 .secondary-btn:hover {
-    background: rgba(0, 240, 255, 0.1);
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    background: #3e4249;
+    color: white;
 }
 
 /* Arena Overlay */
@@ -229,19 +233,18 @@ button:disabled {
     top: 0;
     left: 0;
     overflow: hidden;
-    /* Red glowing borders */
-    box-shadow: inset 0 0 50px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.3);
+    /* Deep stone/blood borders */
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(139, 0, 0, 0.3);
 }
 
 /* Overlay Stats & Scoreboard */
 #overlay-stats {
     position: absolute;
-    top: 15px;
+    bottom: 15px;
     left: 15px;
     font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--secondary-neon);
-    text-shadow: 0 0 8px var(--secondary-neon);
+    color: var(--primary-gold);
+    text-shadow: var(--text-shadow-classic);
     z-index: 100;
 }
 
@@ -263,23 +266,23 @@ button:disabled {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(10, 10, 15, 0.7);
+    background: var(--wood-bg);
     padding: 5px 15px 5px 5px;
-    border-radius: 30px;
-    border: 1px solid var(--secondary-neon);
-    color: white;
+    border-radius: 4px;
+    border: 2px solid var(--primary-gold);
+    color: #e0d8c0;
     font-size: 0.9rem;
     transition: all 0.3s;
-    box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
-    /* Prevent shrinking too much */
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 2px 4px 6px rgba(0,0,0,0.5);
     flex: 0 0 auto;
 }
 
 .score-card.eliminated-score {
-    opacity: 0.3;
-    filter: grayscale(1);
+    opacity: 0.4;
+    filter: sepia(1) hue-rotate(320deg) saturate(2);
     box-shadow: none;
-    border-color: #555;
+    border-color: #553333;
+    background: #2a1111;
 }
 
 .score-name {
@@ -298,12 +301,12 @@ button:disabled {
 }
 
 .score-kills {
-    color: var(--primary-neon);
+    color: var(--secondary-crimson);
     font-weight: 900;
     font-size: 1.1rem;
     margin-left: 5px;
-    font-family: 'Orbitron', sans-serif;
-    text-shadow: 0 0 5px var(--primary-neon);
+    font-family: 'Cinzel', serif;
+    text-shadow: 1px 1px 2px black;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: inline-block;
 }
@@ -321,89 +324,72 @@ button:disabled {
     left: 50%;
     transform: translateX(-50%);
     font-size: 1.1rem;
-    color: var(--primary-neon);
-    text-shadow: 0 0 5px black, 0 0 10px black, 0 0 15px black, 2px 2px 2px black;
+    color: #fff;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px rgba(0,0,0,0.8);
     white-space: nowrap;
     background: transparent;
     padding: 2px 5px;
     border: none;
     font-weight: bold;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Cinzel', serif;
     letter-spacing: 1px;
 }
 
-#overlay-stats {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.5rem;
-    color: var(--secondary-neon);
-    text-shadow: 0 0 10px var(--secondary-neon);
-    z-index: 10;
-}
-
 /* -------------------------------------
-   TINY SWORDS KNIGHTS (144x144 Frames)
+   MULTI-CLASS DYNAMIC UNIT ENGINE
    -------------------------------------*/
-.char-blue, .char-purple, .char-red, .char-yellow {
-    background-size: 864px 1152px; /* 6 cols, 8 rows scaled to 144px */
-    background-position: 0px -144px; /* row 2: Run */
-    animation: knight-run 0.6s steps(6) infinite;
-}
-.char-blue { background-image: url('assets/knights/Warrior_Blue.png'); }
-.char-purple { background-image: url('assets/knights/Warrior_Purple.png'); }
-.char-red { background-image: url('assets/knights/Warrior_Red.png'); }
-.char-yellow { background-image: url('assets/knights/Warrior_Yellow.png'); }
 
-@keyframes knight-run {
-    from { background-position-x: 0px; }
-    to { background-position-x: -864px; }
+.participant {
+    width: 144px;
+    height: 144px;
+    position: absolute;
+    /* Compress the multi-frame strip down so each frame corresponds exactly to our 144px width */
+    background-size: 864px 144px; 
 }
 
-/* Attack Modifier Class (Triggered via JS during dash sequence) */
-.char-blue.slashing, .char-purple.slashing, .char-red.slashing, .char-yellow.slashing {
-    background-position-y: -288px; /* row 3: Attack Side */
-    animation: knight-attack 0.4s steps(6) infinite;
+@keyframes sprite-cycle-3 { to { background-position: -432px 0px; } }
+@keyframes sprite-cycle-4 { to { background-position: -576px 0px; } }
+@keyframes sprite-cycle-6 { to { background-position: -864px 0px; } }
+@keyframes sprite-cycle-8 { to { background-position: -1152px 0px; } }
+@keyframes sprite-cycle-11 { to { background-position: -1584px 0px; } }
+@keyframes sprite-cycle-12 { to { background-position: -1728px 0px; } }
+
+.state-idle {
+    background-image: var(--anim-idle);
 }
 
-@keyframes knight-attack {
-    from { background-position-x: 0px; }
-    to { background-position-x: -864px; }
+.state-run {
+    background-image: var(--anim-run);
 }
 
-/* Idle State (Used later for winner) */
-.winner .participant {
-    background-position-y: 0px; /* row 1: Idle */
-    animation: knight-idle 0.6s steps(6) infinite;
+/* Dash sets animation speed faster natively but references the attack or run var */
+.participant.dashing {
+    animation-duration: 0.15s !important;
 }
 
-@keyframes knight-idle {
-    from { background-position-x: 0px; }
-    to { background-position-x: -864px; }
+.state-attack {
+    background-image: var(--anim-attack);
 }
 
 .flipped {
-    /* A helper class applied natively by Javascript to mirror sprites */
     transform: scaleX(-1);
 }
 
-/* Dashing modifier for all */
-.participant.dashing {
-    animation-duration: 0.15s; /* faster walk cycles when dashing */
+/* Winner States */
+.winner .participant {
+    /* Forcibly lock to idle for the winner */
+    background-image: var(--anim-idle) !important;
 }
 
-
-
-/* Elimination Animation */
-@keyframes laserStrike {
+/* Physical Elimination Animation */
+@keyframes bloodFade {
     0% { transform: scale(1); filter: brightness(1); }
-    50% { transform: scale(1.5); filter: brightness(3) hue-rotate(90deg); box-shadow: 0 0 50px red; border-color: red;}
-    100% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); filter: brightness(0.5) sepia(1) hue-rotate(320deg) saturate(3); opacity: 0.8; }
+    100% { transform: scale(0.5) translateY(20px); opacity: 0; filter: grayscale(1); }
 }
 
 .eliminated {
-    animation: laserStrike 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: bloodFade 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     pointer-events: none;
 }
 
@@ -418,26 +404,22 @@ button:disabled {
     z-index: 999;
 }
 
-#winner-avatar {
-    animation: championPulse 2s infinite, knight-idle 0.6s steps(6) infinite;
-}
-
-/* Slash effect elements */
+/* Slash effect elements (Steel / Blood mimic) */
 .slash {
     position: absolute;
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
     background: transparent;
     border-radius: 50%;
-    border-right: 6px solid var(--primary-neon);
-    border-top: 6px solid var(--primary-neon);
-    box-shadow: inset -5px 5px 15px rgba(255, 0, 127, 0.5), 5px -5px 15px rgba(255, 0, 127, 0.5);
+    border-right: 4px solid #fff;
+    border-top: 4px solid var(--secondary-crimson);
+    box-shadow: inset -5px 5px 5px rgba(139, 0, 0, 0.5), 5px -5px 10px rgba(0, 0, 0, 0.5);
     z-index: 50;
     pointer-events: none;
-    animation: slashAnim 0.3s ease-out forwards;
+    animation: steelSlash 0.25s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
 
-@keyframes slashAnim {
-    0% { transform: translate(-50%, -50%) rotate(-90deg) scale(0.5); opacity: 1; }
-    100% { transform: translate(-50%, -50%) rotate(45deg) scale(1.5); opacity: 0; }
+@keyframes steelSlash {
+    0% { transform: translate(-50%, -50%) rotate(-45deg) scale(0.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotate(90deg) scale(2); opacity: 0; }
 }

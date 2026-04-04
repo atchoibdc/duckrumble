@@ -1,0 +1,32 @@
+{
+    "factions": ["Blue", "Purple", "Red", "Yellow"],
+    "hexMap": {
+        "Blue": "#4a90e2",
+        "Purple": "#9b59b6",
+        "Red": "#e74c3c",
+        "Yellow": "#f1c40f"
+    },
+    "classes": {
+        "Warrior": { 
+            "sprites": {
+                "idle": { "file": "Warrior_Idle.png", "frames": 8 }, 
+                "run": { "file": "Warrior_Run.png", "frames": 6 }, 
+                "attack": { "file": "Warrior_Attack1.png", "frames": 4 } 
+            }
+        },
+        "Lancer": { 
+            "sprites": {
+                "idle": { "file": "Lancer_Idle.png", "frames": 12 }, 
+                "run": { "file": "Lancer_Run.png", "frames": 6 }, 
+                "attack": { "file": "Lancer_Right_Attack.png", "frames": 3 } 
+            }
+        },
+        "Monk": { 
+            "sprites": {
+                "idle": { "file": "Idle.png", "frames": 6 }, 
+                "run": { "file": "Run.png", "frames": 4 }, 
+                "attack": { "file": "Heal.png", "frames": 11 } 
+            }
+        }
+    }
+}
