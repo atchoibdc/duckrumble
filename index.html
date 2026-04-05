@@ -29,13 +29,26 @@
         </div>
     </div>
 
-    <!-- Arena Container -->
-    <div id="arena" class="hidden">
-        <!-- Avatars will be injected here -->
-        
-        <div id="overlay-stats">
-            Contenders Left: <span id="active-count">0</span>
-        </div>
+    <!-- Game Session Layout -->
+    <div id="game-session" class="hidden">
+        <aside id="sidebar-left">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">BATTLE LOG</h2>
+                <div id="overlay-stats">
+                    Contenders Left: <span id="active-count">0</span>
+                </div>
+            </div>
+            <div id="scoreboard">
+                <!-- Participants list injected here -->
+            </div>
+        </aside>
+
+        <main id="arena-main">
+            <div id="arena">
+                <div id="countdown-overlay"></div>
+                <!-- Avatars will be injected here -->
+            </div>
+        </main>
     </div>
 
     <!-- Winner Modal -->

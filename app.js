@@ -10,14 +10,17 @@ const activeCountEl = document.getElementById('active-count');
 const winnerModal = document.getElementById('winner-modal');
 const winnerAvatarEl = document.getElementById('winner-avatar');
 const restartBtn = document.getElementById('restart-btn');
+const gameSession = document.getElementById('game-session');
 
 // Game State
 let participants = []; // { id, name, color, unitClass, avatar, x, y, vx, vy, el, active }
 let animationId = null;
 let eliminationInterval = null;
 const AVATAR_SIZE = 144;
+const INITIAL_MAX_ARENA_SIZE = 960;
 const SPEED = 2;
-let cachedArenaRect = { width: 800, height: 600 };
+let START_PLAYER_COUNT = 0;
+let cachedArenaRect = { width: 960, height: 960, top: 0, left: 0 };
 let countdownActive = false;
 
 let UNIT_COLORS = [];
@@ -121,6 +124,23 @@ function updateParticipantState(p, stateKey) {
         p.el.style.animationIterationCount = 'infinite';
         p.el.style.animationFillMode = 'none';
     }
+}
+
+function updateArenaSize() {
+    const mainArea = document.getElementById('arena-main');
+    if (!mainArea) return;
+
+    // Calculate scale to fit the arena (960x960) into the available viewport area
+    const availableW = mainArea.clientWidth - 40;
+    const availableH = mainArea.clientHeight - 40;
+    
+    const scale = Math.min(1, availableW / 960, availableH / 960);
+    
+    // Set CSS variable for visual scaling
+    arena.style.setProperty('--arena-scale', scale);
+    
+    // Keep internal logic coordinates strictly at 960x960
+    cachedArenaRect = { width: 960, height: 960, left: 0, top: 0 };
 }
 
 // The character engine relies on dynamically injected background-images via CSS vars
@@ -257,7 +277,7 @@ function updateSetupUI() {
 // Start Game
 startBtn.addEventListener('click', () => {
     setupDashboard.classList.add('hidden');
-    arena.classList.remove('hidden');
+    gameSession.classList.remove('hidden');
     initArena();
 });
 
@@ -268,8 +288,14 @@ window.addEventListener('resize', () => {
 });
 
 function initArena() {
-    arena.innerHTML = '<div id="overlay-stats">Contenders Left: <span id="active-count">0</span></div><div id="scoreboard"></div><div id="countdown-overlay"></div>';
+    arena.innerHTML = '<div id="countdown-overlay"></div>';
     
+    // Reset scoreboard and active count
+    const scoreboard = document.getElementById('scoreboard');
+    scoreboard.innerHTML = '';
+    
+    START_PLAYER_COUNT = participants.length;
+    updateArenaSize();
     cachedArenaRect = arena.getBoundingClientRect();
     
     // Initialize participant objects
@@ -342,7 +368,6 @@ function initArena() {
     });
     
     // Build Scoreboard
-    const scoreboard = document.getElementById('scoreboard');
     participants.forEach(p => {
         const card = document.createElement('div');
         card.className = 'score-card';
@@ -395,11 +420,23 @@ function gameLoop() {
         p.x += p.vx;
         p.y += p.vy;
         
-        // Bounce off walls
-        if (p.x <= 0) { p.x = 0; p.vx *= -1; }
-        if (p.x + AVATAR_SIZE >= cachedArenaRect.width) { p.x = cachedArenaRect.width - AVATAR_SIZE; p.vx *= -1; }
-        if (p.y <= 0) { p.y = 0; p.vy *= -1; }
-        if (p.y + AVATAR_SIZE >= cachedArenaRect.height) { p.y = cachedArenaRect.height - AVATAR_SIZE; p.vy *= -1; }
+        // Bounce off walls & Ensure they don't get trapped outside shrinking borders
+        if (p.x < 0) { 
+            p.x = 0; 
+            p.vx = Math.abs(p.vx); 
+        }
+        if (p.x + AVATAR_SIZE > cachedArenaRect.width) { 
+            p.x = cachedArenaRect.width - AVATAR_SIZE; 
+            p.vx = -Math.abs(p.vx); 
+        }
+        if (p.y < 0) { 
+            p.y = 0; 
+            p.vy = Math.abs(p.vy); 
+        }
+        if (p.y + AVATAR_SIZE > cachedArenaRect.height) { 
+            p.y = cachedArenaRect.height - AVATAR_SIZE; 
+            p.vy = -Math.abs(p.vy); 
+        }
     });
 
     // Collision Pass
@@ -516,6 +553,7 @@ function resolveFight(p1, p2) {
         updateParticipantState(loser, 'dead');
         loser.el.classList.add('eliminated');
         updateActiveCount();
+        updateArenaSize();
         
         winner.kills++;
         const scoreKillsEl = document.getElementById(`score-kills-${winner.id}`);
@@ -640,7 +678,7 @@ function declareWinner() {
         document.querySelector('.winner-title').innerHTML = `CHAMPION<br/>${winner.name}`;
         
         setTimeout(() => {
-            arena.classList.add('hidden');
+            gameSession.classList.add('hidden');
             winnerModal.classList.remove('hidden');
         }, 1500);
     }
