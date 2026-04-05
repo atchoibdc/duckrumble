@@ -54,11 +54,16 @@ h1, h2, h3 {
 }
 
 .glow-text {
-    color: var(--primary-gold);
-    text-shadow: var(--text-shadow-classic);
-    font-size: 3.5rem;
-    margin-bottom: 20px;
-    letter-spacing: 2px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: center;
+}
+
+.glow-text img {
+    max-width: 250px;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.9));
 }
 
 .subtext {
