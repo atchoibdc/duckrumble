@@ -14,6 +14,7 @@ const gameSession = document.getElementById('game-session');
 
 // Game State
 let participants = []; // { id, name, color, unitClass, avatar, x, y, vx, vy, el, active }
+let activeGameParticipants = []; // Tracks current arena state
 let animationId = null;
 let eliminationInterval = null;
 const AVATAR_SIZE = 144;
@@ -158,6 +159,7 @@ function updateArenaSize() {
 // LocalStorage Persistence
 function saveParticipants() {
     const rawData = participants.map(p => ({
+        pId: p.pId || (Date.now() + Math.random()),
         name: p.name,
         color: p.color,
         unitClass: p.unitClass,
@@ -208,7 +210,7 @@ function addPlayer(name) {
     // e.g. blue_warrior.png, red_lancer.png, purple_monk.png
     const avatar = `assets/avatars/${color.toLowerCase()}_${unitClass.toLowerCase()}.png`;
     
-    participants.push({ name: name.trim(), color, unitClass, avatar });
+    participants.push({ pId: Date.now() + Math.random(), name: name.trim(), color, unitClass, avatar });
     saveParticipants();
     playerNameInput.value = '';
     updateSetupUI();
@@ -399,6 +401,7 @@ function initArena(p1Override, p2Override) {
             healthSegments: Array.from(healthBar.querySelectorAll('.health-segment')),
             active: true,
             dashing: false,
+            source: p,
             kills: p.kills || 0,
             hp: (p1Override && p2Override) ? 1 : 3, // 1 HP for Tournament, 3 for BR
             isFighting: false,
@@ -419,12 +422,10 @@ function initArena(p1Override, p2Override) {
         return participantObj;
     });
 
-    // Handle Local Participant Ref for Game Loop
-    let loopParticipants = activeParticipants;
+    activeGameParticipants = activeParticipants;
     
-    // Build Scoreboard - Only show active duelists in Tournament mode
-    const scorePool = (p1Override && p2Override) ? activeParticipants : participants;
-    scorePool.forEach(p => {
+    // Build Scoreboard
+    activeGameParticipants.forEach(p => {
         const card = document.createElement('div');
         card.className = 'score-card';
         card.id = `score-card-${p.id}`;
@@ -466,7 +467,7 @@ function initArena(p1Override, p2Override) {
         }, 200);
     }, 1000);
     
-    gameLoop(loopParticipants);
+    gameLoop(activeGameParticipants);
 }
 
 function gameLoop(loopParticipants) {
@@ -546,7 +547,7 @@ function gameLoop(loopParticipants) {
 }
 
 function updateActiveCount(loopParticipants) {
-    const list = loopParticipants || participants;
+    const list = loopParticipants || activeGameParticipants;
     const activeContenders = list.filter(p => p.active);
     document.getElementById('active-count').textContent = activeContenders.length;
 }
@@ -615,7 +616,7 @@ function resolveFight(p1, p2, loopParticipants) {
     if (remaining.length === 1) {
         if (currentGameMode === 'bracket') {
             setTimeout(() => {
-                handleMatchEnd(remaining[0]);
+                handleMatchEnd(remaining[0].source);
             }, 1500);
         } else {
             setTimeout(declareWinner, 1500);
@@ -679,7 +680,7 @@ function drawSlash(x, y, colorHex) {
 
 function declareWinner() {
     cancelAnimationFrame(animationId);
-    const winner = participants.find(p => p.active);
+    const winner = activeGameParticipants.find(p => p.active);
     
     if (winner) {
         winner.el.classList.add('champion');
@@ -817,6 +818,13 @@ function showBracket() {
     }
 }
 
+function getRoundName(roundIdx, totalRounds) {
+    if (roundIdx === totalRounds - 1) return "The Final";
+    if (roundIdx === totalRounds - 2) return "Semi Finals";
+    if (roundIdx === totalRounds - 3) return "Quarter Finals";
+    return `Round of ${Math.pow(2, totalRounds - roundIdx)}`;
+}
+
 function renderBracket() {
     const treeEl = document.getElementById('bracket-tree');
     treeEl.innerHTML = '';
@@ -825,6 +833,12 @@ function renderBracket() {
         const roundEl = document.createElement('div');
         roundEl.className = 'bracket-round';
         
+        // Add round title
+        const titleEl = document.createElement('div');
+        titleEl.className = 'round-title';
+        titleEl.textContent = getRoundName(rIdx, tournamentRounds.length);
+        roundEl.appendChild(titleEl);
+        
         round.forEach((match, mIdx) => {
             const matchEl = document.createElement('div');
             matchEl.className = 'bracket-match';
@@ -832,16 +846,24 @@ function renderBracket() {
                 matchEl.classList.add('active-match');
             }
             
+            const p1Color = COLOR_HEXMAP[match.p1.color];
+            const p2Color = match.p2 ? COLOR_HEXMAP[match.p2.color] : '#555';
+
             matchEl.innerHTML = `
-                <div class="bracket-player ${match.winner === match.p1 ? 'winner' : (match.winner && match.p1 ? 'loser' : '')}">
-                    <img src="${match.p1.avatar}" class="bracket-avatar" style="border: 1px solid ${COLOR_HEXMAP[match.p1.color]}">
+                <div class="bracket-player ${match.winner === match.p1 ? 'winner' : (match.winner ? 'loser' : '')}">
+                    <img src="${match.p1.avatar}" class="bracket-avatar" style="border: 2px solid ${p1Color}">
                     <span>${match.p1.name}</span>
                 </div>
+                <div class="bracket-vs">- VS -</div>
                 ${match.p2 ? `
-                <div class="bracket-player ${match.winner === match.p2 ? 'winner' : (match.winner && match.p2 ? 'loser' : '')}">
-                    <img src="${match.p2.avatar}" class="bracket-avatar" style="border: 1px solid ${COLOR_HEXMAP[match.p2.color]}">
+                <div class="bracket-player ${match.winner === match.p2 ? 'winner' : (match.winner ? 'loser' : '')}">
+                    <img src="${match.p2.avatar}" class="bracket-avatar" style="border: 2px solid ${p2Color}">
                     <span>${match.p2.name}</span>
-                </div>` : '<div class="bracket-player"><i>BYE</i></div>'}
+                </div>` : `
+                <div class="bracket-player">
+                    <div class="bracket-avatar" style="border: 2px solid #555; background: #222; display: flex; align-items:center; justify-content:center; font-size: 10px;">BYE</div>
+                    <span>BYE</span>
+                </div>`}
             `;
             roundEl.appendChild(matchEl);
         });

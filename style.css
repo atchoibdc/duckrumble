@@ -273,32 +273,91 @@ button:disabled {
 
 #bracket-tree {
     display: flex;
-    justify-content: space-around;
-    padding: 30px 0;
-    gap: 40px;
-    min-height: 300px;
+    justify-content: flex-start;
+    padding: 40px 20px;
+    gap: 60px;
+    min-height: 500px;
+    overflow-x: auto;
+    align-items: center;
 }
 
 .bracket-round {
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
-    gap: 20px;
+    justify-content: center;
+    gap: 0;
+    height: 100%;
+    position: relative;
+    padding: 0 40px;
+}
+
+/* Vertical Rail for the Ladder */
+.bracket-round:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    bottom: 10%;
+    width: 2px;
+    background: rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
+.round-title {
+    color: var(--primary-gold);
+    font-family: 'Almendra SC', serif;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    padding-bottom: 5px;
+}
+
+/* Horizontal Rung Connectors */
+.bracket-match::after {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    width: 40px;
+    height: 2px;
+    background: rgba(212, 175, 55, 0.3);
+    display: none;
+}
+
+.bracket-round:not(:last-child) .bracket-match::after {
+    display: block;
 }
 
 .bracket-match {
-    background: rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(40, 30, 20, 0.95), rgba(20, 15, 10, 0.95));
     border: 2px solid var(--gold-border);
-    border-radius: 8px;
-    padding: 8px;
-    min-width: 180px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border-radius: 4px; /* More rectangular "ladder" look */
+    padding: 12px;
+    min-width: 300px;
+    margin: 15px 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bracket-match:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-gold);
 }
 
 .bracket-match.active-match {
     border-color: var(--primary-gold);
-    box-shadow: 0 0 15px var(--primary-gold);
+    box-shadow: 0 0 20px var(--primary-gold);
     animation: match-pulse 1.5s infinite;
+    z-index: 10;
 }
 
 @keyframes match-pulse {
@@ -309,15 +368,34 @@ button:disabled {
 
 .bracket-player {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
     padding: 5px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    flex: 1;
+    text-align: center;
+    min-width: 80px;
+}
+
+.bracket-vs {
+    color: var(--primary-gold);
+    font-size: 0.7rem;
+    font-weight: bold;
+    opacity: 0.5;
+    padding: 0 5px;
 }
 
 .bracket-player.winner {
     color: var(--primary-gold);
     font-weight: bold;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.bracket-player.winner .bracket-avatar {
+    border: 2px solid white !important;
+    box-shadow: 0 0 15px gold;
+    transform: scale(1.1);
 }
 
 .bracket-player.loser {
