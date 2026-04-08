@@ -231,6 +231,120 @@ button:disabled {
     color: white;
 }
 
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.mode-btn {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    background: rgba(0,0,0,0.5);
+    color: #e0d8c0;
+    border: 1px solid var(--gold-border);
+    transition: all 0.3s;
+    min-width: 150px;
+}
+
+.mode-btn.active {
+    background: var(--primary-gold);
+    color: var(-- iron-dark);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+    border-color: #fff;
+    font-weight: 900;
+}
+
+.mode-btn:not(.active):hover {
+    border-color: var(--primary-gold);
+    background: rgba(212, 175, 55, 0.1);
+}
+
+/* Bracket View */
+#bracket-view {
+    z-index: 1000;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+#bracket-tree {
+    display: flex;
+    justify-content: space-around;
+    padding: 30px 0;
+    gap: 40px;
+    min-height: 300px;
+}
+
+.bracket-round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 20px;
+}
+
+.bracket-match {
+    background: rgba(0,0,0,0.3);
+    border: 2px solid var(--gold-border);
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 180px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.bracket-match.active-match {
+    border-color: var(--primary-gold);
+    box-shadow: 0 0 15px var(--primary-gold);
+    animation: match-pulse 1.5s infinite;
+}
+
+@keyframes match-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.bracket-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+    font-size: 0.85rem;
+}
+
+.bracket-player.winner {
+    color: var(--primary-gold);
+    font-weight: bold;
+}
+
+.bracket-player.loser {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.bracket-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.match-info {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: var(--primary-gold);
+}
+
+.bracket-countdown {
+    font-size: 2.5rem;
+    color: #fff;
+    font-weight: bold;
+    margin-top: 10px;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
 /* Game Session Layout */
 #game-session {
     display: flex;

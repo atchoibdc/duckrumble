@@ -22,6 +22,14 @@ const SPEED = 2;
 let START_PLAYER_COUNT = 0;
 let cachedArenaRect = { width: 960, height: 960, top: 0, left: 0 };
 let countdownActive = false;
+let currentGameMode = 'battle_royale'; // 'battle_royale' or 'bracket'
+
+// Tournament State
+let tournamentRounds = []; // Array of rounds, each containing an array of matches
+let currentRoundIdx = 0;
+let currentMatchIdx = 0;
+let tournamentActive = false;
+let bracketTimer = null;
 
 let UNIT_COLORS = [];
 let COLOR_HEXMAP = {};
@@ -164,8 +172,8 @@ function loadParticipants() {
         if (data) {
             participants = JSON.parse(data);
             
-            if (participants.length > 12) {
-                participants = participants.slice(0, 12);
+            if (participants.length > 16) {
+                participants = participants.slice(0, 16);
             }
             
             saveParticipants();
@@ -180,8 +188,8 @@ function loadParticipants() {
 function addPlayer(name) {
     if (!name.trim()) return;
     
-    if (participants.length >= 12) {
-        alert("Maximum 12 participants allowed.");
+    if (participants.length >= 16) {
+        alert("Maximum 16 participants allowed.");
         return;
     }
     
@@ -213,6 +221,15 @@ addPlayerBtn.addEventListener('click', () => {
 
 playerNameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addPlayer(playerNameInput.value);
+});
+
+// Mode Selector Logic
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentGameMode = btn.dataset.mode;
+    });
 });
 
 // Remove player
@@ -263,10 +280,10 @@ function updateSetupUI() {
         startBtn.disabled = true;
     }
 
-    if (participants.length >= 12) {
+    if (participants.length >= 16) {
         addPlayerBtn.disabled = true;
         playerNameInput.disabled = true;
-        playerNameInput.placeholder = "Max 12 Participants Reached";
+        playerNameInput.placeholder = "Max 16 Participants Reached";
     } else {
         addPlayerBtn.disabled = false;
         playerNameInput.disabled = false;
@@ -277,8 +294,12 @@ function updateSetupUI() {
 // Start Game
 startBtn.addEventListener('click', () => {
     setupDashboard.classList.add('hidden');
-    gameSession.classList.remove('hidden');
-    initArena();
+    if (currentGameMode === 'bracket') {
+        startTournament();
+    } else {
+        gameSession.classList.remove('hidden');
+        initArena();
+    }
 });
 
 window.addEventListener('resize', () => {
@@ -287,19 +308,33 @@ window.addEventListener('resize', () => {
     }
 });
 
-function initArena() {
+function initArena(p1Override, p2Override) {
     arena.innerHTML = '<div id="countdown-overlay"></div>';
     
     // Reset scoreboard and active count
     const scoreboard = document.getElementById('scoreboard');
     scoreboard.innerHTML = '';
     
-    START_PLAYER_COUNT = participants.length;
+    let activeParticipants = [];
+    if (p1Override && p2Override) {
+        // Tournament Match (1v1) - Sideway Sudden Death
+        activeParticipants = [p1Override, p2Override];
+        // Ensure healthy state for the contenders - Sudden Death (1 HP)
+        p1Override.hp = 1;
+        p2Override.hp = 1;
+        p1Override.active = true;
+        p2Override.active = true;
+    } else {
+        // Battle Royale
+        activeParticipants = participants;
+    }
+
+    START_PLAYER_COUNT = activeParticipants.length;
     updateArenaSize();
     cachedArenaRect = arena.getBoundingClientRect();
     
     // Initialize participant objects
-    participants = participants.map((p, index) => {
+    activeParticipants = activeParticipants.map((p, index) => {
         const el = document.createElement('div');
         // Initialize base class
         el.className = `participant state-run`;
@@ -325,19 +360,35 @@ function initArena() {
         label.style.textShadow = `-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px ${COLOR_HEXMAP[p.color]}`;
         el.appendChild(label);
         
-        // Random start position within bounds
-        const x = Math.random() * (cachedArenaRect.width - AVATAR_SIZE);
-        const y = Math.random() * (cachedArenaRect.height - AVATAR_SIZE);
-        
-        // Random direction
+        // Positon logic
+        let x, y;
+        let vx, vy;
         const angle = Math.random() * Math.PI * 2;
-        const vx = Math.cos(angle) * SPEED;
-        const vy = Math.sin(angle) * SPEED;
+
+        if (p1Override && p2Override) {
+            // Tournament 1v1 Placement - Sideway Fight
+            const padding = 100;
+            y = 960 / 2 - AVATAR_SIZE / 2;
+            x = (index === 0) ? padding : (960 - AVATAR_SIZE - padding);
+            
+            // Sideway only movement
+            vx = (index === 0) ? SPEED : -SPEED;
+            vy = 0;
+        } else {
+            // Random start position within bounds
+            x = Math.random() * (960 - AVATAR_SIZE);
+            y = Math.random() * (960 - AVATAR_SIZE);
+            
+            // Random direction
+            vx = Math.cos(angle) * SPEED;
+            vy = Math.sin(angle) * SPEED;
+        }
         
         arena.appendChild(el);
         
         const participantObj = {
             id: index,
+            pIndex: index, // Track original local index for multi-spawn match logic
             name: p.name,
             color: p.color,
             unitClass: p.unitClass,
@@ -348,8 +399,8 @@ function initArena() {
             healthSegments: Array.from(healthBar.querySelectorAll('.health-segment')),
             active: true,
             dashing: false,
-            kills: 0,
-            hp: 3,
+            kills: p.kills || 0,
+            hp: (p1Override && p2Override) ? 1 : 3, // 1 HP for Tournament, 3 for BR
             isFighting: false,
             cooldown: false,
             forceFlip: false,
@@ -364,24 +415,31 @@ function initArena() {
             }
         };
         updateParticipantState(participantObj, 'run');
+        updateHealthUI(participantObj); // Sync health view
         return participantObj;
     });
+
+    // Handle Local Participant Ref for Game Loop
+    let loopParticipants = activeParticipants;
     
-    // Build Scoreboard
-    participants.forEach(p => {
+    // Build Scoreboard - Only show active duelists in Tournament mode
+    const scorePool = (p1Override && p2Override) ? activeParticipants : participants;
+    scorePool.forEach(p => {
         const card = document.createElement('div');
         card.className = 'score-card';
         card.id = `score-card-${p.id}`;
         card.innerHTML = `
             <img src="${p.avatar}" class="score-avatar" style="border: 2px solid ${COLOR_HEXMAP[p.color]};">
             <div class="score-name" style="color: ${COLOR_HEXMAP[p.color]}">${p.name}</div>
-            <div class="score-hp" id="score-hp-${p.id}" style="color: #27ae60; margin: 0 5px; font-size: 0.9em; font-family: monospace;">♥♥♥</div>
-            <div class="score-kills" id="score-kills-${p.id}">⚔️ 0</div>
+            <div class="score-hp" id="score-hp-${p.id}" style="color: #27ae60; margin: 0 5px; font-size: 0.9em; font-family: monospace;">
+                ${'♥'.repeat(p.hp)}${'♡'.repeat(3 - p.hp)}
+            </div>
+            <div class="score-kills" id="score-kills-${p.id}">⚔️ ${p.kills}</div>
         `;
         scoreboard.appendChild(card);
     });
     
-    updateActiveCount();
+    updateActiveCount(activeParticipants);
     
     countdownActive = true;
     let count = 3;
@@ -408,49 +466,36 @@ function initArena() {
         }, 200);
     }, 1000);
     
-    gameLoop();
+    gameLoop(loopParticipants);
 }
 
-function gameLoop() {
-    if (!countdownActive) {
+function gameLoop(loopParticipants) {
+    if (!gameSession.classList.contains('hidden') && !countdownActive) {
         // Movement and bounds
-        participants.forEach(p => {
+        loopParticipants.forEach(p => {
         if (!p.active || p.isFighting) return;
         
         p.x += p.vx;
         p.y += p.vy;
         
-        // Bounce off walls & Ensure they don't get trapped outside shrinking borders
-        if (p.x < 0) { 
-            p.x = 0; 
-            p.vx = Math.abs(p.vx); 
-        }
-        if (p.x + AVATAR_SIZE > cachedArenaRect.width) { 
-            p.x = cachedArenaRect.width - AVATAR_SIZE; 
-            p.vx = -Math.abs(p.vx); 
-        }
-        if (p.y < 0) { 
-            p.y = 0; 
-            p.vy = Math.abs(p.vy); 
-        }
-        if (p.y + AVATAR_SIZE > cachedArenaRect.height) { 
-            p.y = cachedArenaRect.height - AVATAR_SIZE; 
-            p.vy = -Math.abs(p.vy); 
-        }
+        if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
+        if (p.x + AVATAR_SIZE > 960) { p.x = 960 - AVATAR_SIZE; p.vx = -Math.abs(p.vx); }
+        if (p.y < 0) { p.y = 0; p.vy = Math.abs(p.vy); }
+        if (p.y + AVATAR_SIZE > 960) { p.y = 960 - AVATAR_SIZE; p.vy = -Math.abs(p.vy); }
     });
 
     // Collision Pass
-    for (let i = 0; i < participants.length; i++) {
-        for (let j = i + 1; j < participants.length; j++) {
-            const p1 = participants[i];
-            const p2 = participants[j];
+    for (let i = 0; i < loopParticipants.length; i++) {
+        for (let j = i + 1; j < loopParticipants.length; j++) {
+            const p1 = loopParticipants[i];
+            const p2 = loopParticipants[j];
             
             if (p1.active && p2.active && !p1.isFighting && !p2.isFighting && !p1.cooldown && !p2.cooldown) {
                 const dx = p1.x - p2.x;
                 const dy = p1.y - p2.y;
                 
                 if (dx * dx + dy * dy < 3600) {
-                    startFight(p1, p2);
+                    startFight(p1, p2, loopParticipants);
                 }
             }
         }
@@ -458,12 +503,12 @@ function gameLoop() {
     }
 
     // Render pass
-    participants.forEach(p => {
+    loopParticipants.forEach(p => {
         if (!p.active) return;
         
         let stateClass = 'state-idle';
         let stateKey = 'idle';
-        let flipped = p.x > cachedArenaRect.width / 2; // Face center
+        let flipped = p.x > 960 / 2; // Face center
         
         if (!countdownActive) {
             stateClass = p.isFighting ? 'state-attack' : 'state-run';
@@ -486,57 +531,54 @@ function gameLoop() {
         }
 
         const vs = p.visualScale;
+        p.el.style.transform = `translate(${p.x}px, ${p.y}px) scale(${vs})${flipped ? ' scaleX(-1)' : ''}`;
         
-        // Save bounds for CSS animations to reference
-        p.el.style.setProperty('--p-x', `${p.x}px`);
-        p.el.style.setProperty('--p-y', `${p.y}px`);
-        p.el.style.setProperty('--p-scale', vs);
-        p.el.style.setProperty('--p-flip', flipped ? -1 : 1);
-        
-        const flipTransform = flipped ? ' scaleX(-1)' : '';
-        p.el.style.transform = `translate(${p.x}px, ${p.y}px) scale(${vs})${flipTransform}`;
-        
-        const innerTransform = `translateX(-50%) scale(${1/vs})${flipTransform}`;
+        const innerTransform = `translateX(-50%) scale(${1/vs})${flipped ? ' scaleX(-1)' : ''}`;
         p.labelEl.style.transform = innerTransform;
         if (p.healthBarEl) {
             p.healthBarEl.style.transform = innerTransform;
         }
     });
     
-    animationId = requestAnimationFrame(gameLoop);
+    if (!gameSession.classList.contains('hidden')) {
+        animationId = requestAnimationFrame(() => gameLoop(loopParticipants));
+    }
 }
 
-function updateActiveCount() {
-    const activeContenders = participants.filter(p => p.active);
+function updateActiveCount(loopParticipants) {
+    const list = loopParticipants || participants;
+    const activeContenders = list.filter(p => p.active);
     document.getElementById('active-count').textContent = activeContenders.length;
 }
 
-function startFight(p1, p2) {
+function startFight(p1, p2, loopParticipants) {
     p1.isFighting = true;
     p2.isFighting = true;
     
     p1.vx = 0; p1.vy = 0;
     p2.vx = 0; p2.vy = 0;
     
-    // Face each other
+    // Face each other - Archer keeps distance
+    const dist = (p1.unitClass === 'Archer' || p2.unitClass === 'Archer') ? 120 : 40;
+    
     if (p1.x < p2.x) {
         p1.forceFlip = false;
         p2.forceFlip = true;
-        p1.x = p2.x - 40;
+        p1.x = p2.x - dist;
         p1.y = p2.y;
     } else {
         p1.forceFlip = true;
         p2.forceFlip = false;
-        p1.x = p2.x + 40;
+        p1.x = p2.x + dist;
         p1.y = p2.y;
     }
     
     setTimeout(() => {
-        resolveFight(p1, p2);
+        resolveFight(p1, p2, loopParticipants);
     }, 2000);
 }
 
-function resolveFight(p1, p2) {
+function resolveFight(p1, p2, loopParticipants) {
     if (!p1.active || !p2.active) return;
     
     const p1Loses = Math.random() > 0.5;
@@ -552,15 +594,12 @@ function resolveFight(p1, p2) {
         loser.active = false;
         updateParticipantState(loser, 'dead');
         loser.el.classList.add('eliminated');
-        updateActiveCount();
-        updateArenaSize();
+        updateActiveCount(loopParticipants);
         
         winner.kills++;
         const scoreKillsEl = document.getElementById(`score-kills-${winner.id}`);
         if(scoreKillsEl) {
             scoreKillsEl.textContent = `⚔️ ${winner.kills}`;
-            scoreKillsEl.style.transform = "scale(1.5)";
-            setTimeout(() => scoreKillsEl.style.transform = "scale(1)", 200);
         }
         
         const targetScoreCard = document.getElementById(`score-card-${loser.id}`);
@@ -572,9 +611,15 @@ function resolveFight(p1, p2) {
         resetFighter(loser);
     }
     
-    const remaining = participants.filter(p => p.active);
+    const remaining = loopParticipants.filter(p => p.active);
     if (remaining.length === 1) {
-        setTimeout(declareWinner, 1500);
+        if (currentGameMode === 'bracket') {
+            setTimeout(() => {
+                handleMatchEnd(remaining[0]);
+            }, 1500);
+        } else {
+            setTimeout(declareWinner, 1500);
+        }
     }
 }
 
@@ -598,13 +643,11 @@ function resetFighter(p) {
 function updateHealthUI(p) {
     const scoreHpEl = document.getElementById(`score-hp-${p.id}`);
     if (scoreHpEl) {
-        if (p.hp === 3) scoreHpEl.textContent = "♥♥♥";
-        else if (p.hp === 2) scoreHpEl.textContent = "♥♥♡";
-        else if (p.hp === 1) scoreHpEl.textContent = "♥♡♡";
-        else scoreHpEl.textContent = "♡♡♡";
+        scoreHpEl.textContent = '♥'.repeat(Math.max(0, p.hp)) + '♡'.repeat(Math.max(0, 3 - p.hp));
         
         if (p.hp <= 1) scoreHpEl.style.color = "#c0392b";
         else if (p.hp === 2) scoreHpEl.style.color = "#f39c12";
+        else scoreHpEl.style.color = "#27ae60";
     }
     
     if (p.healthSegments) {
@@ -696,3 +739,170 @@ restartBtn.addEventListener('click', () => {
         updateSetupUI();
     }
 });
+
+// -------------------------------------
+// TOURNAMENT LOGIC
+// -------------------------------------
+
+function startTournament() {
+    tournamentActive = true;
+    currentRoundIdx = 0;
+    currentMatchIdx = 0;
+    
+    // Clone starting participants to keep original state clean
+    let pool = participants.map(p => ({...p, kills: 0, hp: 3, active: true}));
+    tournamentRounds = [];
+    
+    generateNextRound(pool);
+    showBracket();
+}
+
+function generateNextRound(pool) {
+    const matches = [];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    
+    while(shuffled.length >= 2) {
+        matches.push({
+            p1: shuffled.shift(),
+            p2: shuffled.shift(),
+            winner: null
+        });
+    }
+    
+    // Bye handle
+    if (shuffled.length === 1) {
+        matches.push({
+            p1: shuffled.shift(),
+            p2: null,
+            winner: null,
+            isBye: true
+        });
+    }
+    
+    tournamentRounds.push(matches);
+}
+
+function showBracket() {
+    gameSession.classList.add('hidden');
+    document.getElementById('bracket-view').classList.remove('hidden');
+    
+    renderBracket();
+    
+    const currentRound = tournamentRounds[currentRoundIdx];
+    const currentMatch = currentRound[currentMatchIdx];
+    
+    if (currentMatch.isBye) {
+        document.getElementById('next-matchup').textContent = `${currentMatch.p1.name} (BYE advancing...)`;
+        setTimeout(() => {
+            currentMatch.winner = currentMatch.p1;
+            handleMatchEnd(currentMatch.p1);
+        }, 1500);
+    } else {
+        document.getElementById('next-matchup').textContent = `${currentMatch.p1.name} vs ${currentMatch.p2.name}`;
+        
+        // Auto Countdown
+        let seconds = 3;
+        const timerEl = document.getElementById('bracket-timer');
+        timerEl.textContent = seconds;
+        
+        clearInterval(bracketTimer);
+        bracketTimer = setInterval(() => {
+            seconds--;
+            timerEl.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(bracketTimer);
+                startCurrentMatch();
+            }
+        }, 1000);
+    }
+}
+
+function renderBracket() {
+    const treeEl = document.getElementById('bracket-tree');
+    treeEl.innerHTML = '';
+    
+    tournamentRounds.forEach((round, rIdx) => {
+        const roundEl = document.createElement('div');
+        roundEl.className = 'bracket-round';
+        
+        round.forEach((match, mIdx) => {
+            const matchEl = document.createElement('div');
+            matchEl.className = 'bracket-match';
+            if (rIdx === currentRoundIdx && mIdx === currentMatchIdx) {
+                matchEl.classList.add('active-match');
+            }
+            
+            matchEl.innerHTML = `
+                <div class="bracket-player ${match.winner === match.p1 ? 'winner' : (match.winner && match.p1 ? 'loser' : '')}">
+                    <img src="${match.p1.avatar}" class="bracket-avatar" style="border: 1px solid ${COLOR_HEXMAP[match.p1.color]}">
+                    <span>${match.p1.name}</span>
+                </div>
+                ${match.p2 ? `
+                <div class="bracket-player ${match.winner === match.p2 ? 'winner' : (match.winner && match.p2 ? 'loser' : '')}">
+                    <img src="${match.p2.avatar}" class="bracket-avatar" style="border: 1px solid ${COLOR_HEXMAP[match.p2.color]}">
+                    <span>${match.p2.name}</span>
+                </div>` : '<div class="bracket-player"><i>BYE</i></div>'}
+            `;
+            roundEl.appendChild(matchEl);
+        });
+        
+        treeEl.appendChild(roundEl);
+    });
+}
+
+function startCurrentMatch() {
+    const match = tournamentRounds[currentRoundIdx][currentMatchIdx];
+    document.getElementById('bracket-view').classList.add('hidden');
+    gameSession.classList.remove('hidden');
+    
+    initArena(match.p1, match.p2);
+}
+
+function handleMatchEnd(winner) {
+    const round = tournamentRounds[currentRoundIdx];
+    round[currentMatchIdx].winner = winner;
+    
+    currentMatchIdx++;
+    
+    if (currentMatchIdx >= round.length) {
+        // Round Finished
+        const winners = round.map(m => m.winner);
+        
+        if (winners.length === 1) {
+            // Overall Champion!
+            declareTournamentChampion(winners[0]);
+        } else {
+            // Prepare next round
+            currentMatchIdx = 0;
+            currentRoundIdx++;
+            generateNextRound(winners);
+            showBracket();
+        }
+    } else {
+        showBracket();
+    }
+}
+
+function declareTournamentChampion(winner) {
+    gameSession.classList.add('hidden');
+    winnerModal.classList.remove('hidden');
+    
+    document.querySelector('.winner-title').innerHTML = `TOURNAMENT CHAMPION<br/>${winner.name}`;
+    
+    winnerAvatarEl.className = `participant state-idle`;
+    const winnerSprites = SPRITE_MAP[winner.unitClass];
+    winnerAvatarEl.style.setProperty('--anim-idle', `url('assets/Units/${winner.color} Units/${winner.unitClass}/${winnerSprites.idle.file}')`);
+    const f  = winnerSprites.idle.frames;
+    const fw = winnerSprites.idle.frameW;
+    const fh = winnerSprites.idle.frameH;
+    const scale = 144 / fh;
+    const bgW = Math.round(fw * f * scale);
+    winnerAvatarEl.style.backgroundImage = `var(--anim-idle)`;
+    winnerAvatarEl.style.backgroundSize = `${bgW}px 144px`;
+    const dur = Math.max(0.4, f * 0.1).toFixed(2);
+    winnerAvatarEl.style.setProperty('--sprite-step-w', `${-bgW}px`);
+    winnerAvatarEl.style.animation = `championPulse 2s infinite, sprite-cycle ${dur}s steps(${f}) infinite`;
+    
+    const vs = winnerSprites._visualScale || 1.0;
+    winnerAvatarEl.style.transform = `scale(${1.5 * vs})`;
+}

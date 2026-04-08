@@ -33,6 +33,15 @@
                 "attack": { "file": "Heal.png",  "frames": 11, "frameW": 192, "frameH": 192 },
                 "dead":   { "file": "../../Dead.png", "frames": 7,  "frameW": 128, "frameH": 128 } 
             }
+        },
+        "Archer": { 
+            "visualScale": 1.2,
+            "sprites": {
+                "idle":   { "file": "Archer_Idle.png",  "frames": 6, "frameW": 192, "frameH": 192 }, 
+                "run":    { "file": "Archer_Run.png",   "frames": 4, "frameW": 192, "frameH": 192 }, 
+                "attack": { "file": "Archer_Shoot.png", "frames": 8, "frameW": 192, "frameH": 192 },
+                "dead":   { "file": "../../Dead.png",   "frames": 7, "frameW": 128, "frameH": 128 } 
+            }
         }
     }
 }

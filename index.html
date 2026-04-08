@@ -26,9 +26,24 @@
             Combatants Enrolled: <span id="participant-count" class="highlight">0</span>
         </div>
 
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="battle_royale">BATTLE ROYALE</button>
+            <button class="mode-btn" data-mode="bracket">TOURNAMENT</button>
+        </div>
+
         <div class="actions">
             <button id="start-btn" class="primary-btn" disabled>ENTER THE ARENA</button>
         </div>
+    </div>
+
+    <!-- Bracket Overlay -->
+    <div id="bracket-view" class="glass-panel hidden">
+        <h2 class="glow-text">TOURNAMENT BRACKET</h2>
+        <div id="bracket-tree"></div>
+        <div class="match-info">
+            Next: <span id="next-matchup">Loading...</span>
+        </div>
+        <div class="bracket-countdown" id="bracket-timer"></div>
     </div>
 
     <!-- Game Session Layout -->
