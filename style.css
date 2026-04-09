@@ -134,6 +134,21 @@ h1, h2, h3 {
     width: 100%;
 }
 
+.bracket-player i {
+    color: #666;
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+.bracket-player img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));
+    border-radius: 50%;
+    border: 1px solid var(--primary-gold);
+}
+
 .lobby-avatar {
     width: 56px;
     height: 56px;
@@ -262,6 +277,36 @@ button:disabled {
     background: rgba(212, 175, 55, 0.1);
 }
 
+.bracket-player.winner {
+    color: var(--primary-gold);
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+    font-weight: bold;
+}
+
+.bracket-player.winner img {
+    box-shadow: 0 0 15px var(--primary-gold);
+    border-color: #fff;
+}
+
+.bracket-player.loser {
+    opacity: 0.5;
+    text-decoration: line-through;
+    filter: grayscale(0.8);
+}
+
+.bracket-match.active-match {
+    border-color: var(--primary-gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    animation: matchPulse 2s infinite;
+    z-index: 10;
+}
+
+@keyframes matchPulse {
+    0% { transform: scale(1); box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+    50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(212, 175, 55, 0.6); }
+    100% { transform: scale(1); box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+}
+
 /* Bracket View */
 #bracket-view {
     z-index: 1000;
@@ -284,9 +329,9 @@ button:disabled {
 .bracket-round {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-around;
     gap: 0;
-    height: 100%;
+    min-height: 400px; /* Ensure enough height for large brackets */
     position: relative;
     padding: 0 40px;
 }
@@ -296,11 +341,11 @@ button:disabled {
     content: '';
     position: absolute;
     right: 0;
-    top: 10%;
-    bottom: 10%;
+    top: 50px;
+    bottom: 50px;
     width: 2px;
-    background: rgba(212, 175, 55, 0.2);
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+    background: linear-gradient(to bottom, transparent, var(--primary-gold), transparent);
+    opacity: 0.3;
 }
 
 .round-title {
@@ -323,11 +368,23 @@ button:disabled {
     top: 50%;
     width: 40px;
     height: 2px;
-    background: rgba(212, 175, 55, 0.3);
+    background: rgba(212, 175, 55, 0.4);
     display: none;
 }
 
-.bracket-round:not(:last-child) .bracket-match::after {
+.bracket-match::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    width: 40px;
+    height: 2px;
+    background: rgba(212, 175, 55, 0.4);
+    display: none;
+}
+
+.bracket-round:not(:last-child) .bracket-match::after,
+.bracket-round:not(:first-child) .bracket-match::before {
     display: block;
 }
 

@@ -750,11 +750,35 @@ function startTournament() {
     currentRoundIdx = 0;
     currentMatchIdx = 0;
     
-    // Clone starting participants to keep original state clean
-    let pool = participants.map(p => ({...p, kills: 0, hp: 3, active: true}));
+    // Clone starting participants
+    let pool = participants.map(p => ({...p, kills: 0, hp: 3, active: true, source: p}));
     tournamentRounds = [];
     
-    generateNextRound(pool);
+    // Pre-calculate all rounds
+    let currentPool = [...pool].sort(() => Math.random() - 0.5);
+    while (currentPool.length > 1 || tournamentRounds.length === 0) {
+        const roundMatches = [];
+        const nextPool = [];
+        
+        while (currentPool.length >= 2) {
+            const p1 = currentPool.shift();
+            const p2 = currentPool.shift();
+            roundMatches.push({ p1, p2, winner: null });
+            // Placeholder for next round (actual winners will fill this)
+            nextPool.push(null);
+        }
+        
+        if (currentPool.length === 1) {
+            const p1 = currentPool.shift();
+            roundMatches.push({ p1, p2: null, winner: p1, isBye: true });
+            nextPool.push(p1);
+        }
+        
+        tournamentRounds.push(roundMatches);
+        currentPool = nextPool;
+        if (roundMatches.length === 1 && !roundMatches[0].isBye) break;
+    }
+    
     showBracket();
 }
 
@@ -819,10 +843,11 @@ function showBracket() {
 }
 
 function getRoundName(roundIdx, totalRounds) {
-    if (roundIdx === totalRounds - 1) return "The Final";
-    if (roundIdx === totalRounds - 2) return "Semi Finals";
-    if (roundIdx === totalRounds - 3) return "Quarter Finals";
-    return `Round of ${Math.pow(2, totalRounds - roundIdx)}`;
+    const diff = totalRounds - roundIdx;
+    if (diff === 1) return "The Grand Final";
+    if (diff === 2) return "Semi-Finals";
+    if (diff === 3) return "Quarter-Finals";
+    return `Round of ${Math.pow(2, diff)}`;
 }
 
 function renderBracket() {
@@ -846,24 +871,20 @@ function renderBracket() {
                 matchEl.classList.add('active-match');
             }
             
-            const p1Color = COLOR_HEXMAP[match.p1.color];
-            const p2Color = match.p2 ? COLOR_HEXMAP[match.p2.color] : '#555';
+            const p1 = match.p1;
+            const p2 = match.p2;
+            const p1Color = p1 ? COLOR_HEXMAP[p1.color] : '#555';
+            const p2Color = p2 ? COLOR_HEXMAP[p2.color] : '#555';
 
             matchEl.innerHTML = `
-                <div class="bracket-player ${match.winner === match.p1 ? 'winner' : (match.winner ? 'loser' : '')}">
-                    <img src="${match.p1.avatar}" class="bracket-avatar" style="border: 2px solid ${p1Color}">
-                    <span>${match.p1.name}</span>
+                <div class="bracket-player ${p1 && match.winner === p1 ? 'winner' : (p1 && match.winner && match.winner !== p1 ? 'loser' : '')}">
+                    ${p1 ? `<img src="${p1.avatar}" class="bracket-avatar" style="border: 2px solid ${p1Color}"><span>${p1.name}</span>` : '<i>TBD</i>'}
                 </div>
                 <div class="bracket-vs">- VS -</div>
-                ${match.p2 ? `
-                <div class="bracket-player ${match.winner === match.p2 ? 'winner' : (match.winner ? 'loser' : '')}">
-                    <img src="${match.p2.avatar}" class="bracket-avatar" style="border: 2px solid ${p2Color}">
-                    <span>${match.p2.name}</span>
-                </div>` : `
-                <div class="bracket-player">
-                    <div class="bracket-avatar" style="border: 2px solid #555; background: #222; display: flex; align-items:center; justify-content:center; font-size: 10px;">BYE</div>
-                    <span>BYE</span>
-                </div>`}
+                <div class="bracket-player ${p2 && match.winner === p2 ? 'winner' : (p2 && match.winner && match.winner !== p2 ? 'loser' : '')}">
+                    ${match.isBye ? `<div class="bracket-avatar" style="border: 2px solid #555; background: #222; display: flex; align-items:center; justify-content:center; font-size: 10px;">BYE</div><span>BYE</span>` 
+                      : (p2 ? `<img src="${p2.avatar}" class="bracket-avatar" style="border: 2px solid ${p2Color}"><span>${p2.name}</span>` : '<i>TBD</i>')}
+                </div>
             `;
             roundEl.appendChild(matchEl);
         });
@@ -887,18 +908,25 @@ function handleMatchEnd(winner) {
     currentMatchIdx++;
     
     if (currentMatchIdx >= round.length) {
-        // Round Finished
-        const winners = round.map(m => m.winner);
-        
-        if (winners.length === 1) {
-            // Overall Champion!
-            declareTournamentChampion(winners[0]);
-        } else {
-            // Prepare next round
+        // Round Finished - Propagate winners to next round
+        if (currentRoundIdx < tournamentRounds.length - 1) {
+            const nextRound = tournamentRounds[currentRoundIdx + 1];
+            round.forEach((match, idx) => {
+                const nextMatchIdx = Math.floor(idx / 2);
+                const nextMatch = nextRound[nextMatchIdx];
+                if (idx % 2 === 0) {
+                    nextMatch.p1 = match.winner;
+                } else {
+                    nextMatch.p2 = match.winner;
+                }
+            });
+            
             currentMatchIdx = 0;
             currentRoundIdx++;
-            generateNextRound(winners);
             showBracket();
+        } else {
+            // Overall Champion!
+            declareTournamentChampion(winner);
         }
     } else {
         showBracket();
