@@ -521,6 +521,7 @@ function initArena(p1Override, p2Override) {
     });
     
     updateActiveCount(activeParticipants);
+    sortScoreboard();
     
     countdownActive = true;
     let count = 3;
@@ -674,6 +675,37 @@ function updateActiveCount(loopParticipants) {
     document.getElementById('active-count').textContent = activeContenders.length;
 }
 
+function sortScoreboard() {
+    const scoreboard = document.getElementById('scoreboard');
+    if (!scoreboard) return;
+    const cards = Array.from(scoreboard.querySelectorAll('.score-card'));
+    
+    cards.sort((a, b) => {
+        const idA = parseInt(a.id.replace('score-card-', ''));
+        const idB = parseInt(b.id.replace('score-card-', ''));
+        
+        const pA = activeGameParticipants.find(p => p.id === idA);
+        const pB = activeGameParticipants.find(p => p.id === idB);
+        
+        if (!pA || !pB) return 0;
+        
+        // 1. Sort by active status (alive first)
+        if (pA.active !== pB.active) {
+            return pA.active ? -1 : 1;
+        }
+        
+        // 2. Sort by kills (descending)
+        if (pB.kills !== pA.kills) {
+            return pB.kills - pA.kills;
+        }
+        
+        // 3. Fallback to ID for stable sort
+        return idA - idB;
+    });
+    
+    cards.forEach(card => scoreboard.appendChild(card));
+}
+
 function startFight(p1, p2, loopParticipants) {
     p1.isFighting = true;
     p2.isFighting = true;
@@ -729,6 +761,14 @@ function resolveFight(p1, p2, loopParticipants) {
         updateActiveCount(loopParticipants);
         
         winner.kills++;
+        
+        // Special character lifesteal mechanic
+        const isSpecialWinner = winner.name.toLowerCase() === 'junnieboy' || winner.name.toLowerCase() === 'lowe';
+        if (isSpecialWinner && winner.hp < winner.maxHp) {
+            winner.hp += 1;
+            updateHealthUI(winner);
+        }
+        
         const scoreKillsEl = document.getElementById(`score-kills-${winner.id}`);
         if(scoreKillsEl) {
             scoreKillsEl.textContent = `⚔️ ${winner.kills}`;
@@ -736,6 +776,9 @@ function resolveFight(p1, p2, loopParticipants) {
         
         const targetScoreCard = document.getElementById(`score-card-${loser.id}`);
         if (targetScoreCard) targetScoreCard.classList.add('eliminated-score');
+
+        // Dynamic leaderboard sorting
+        sortScoreboard();
     }
     
     resetFighter(winner);
