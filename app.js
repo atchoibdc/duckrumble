@@ -112,16 +112,23 @@ function updateParticipantState(p, stateKey) {
     // Scale so the native cell maps 1:1 to DISPLAY px
     // bgW = (sheet_width / frameH) * DISPLAY = (fw * frames / frameH) * DISPLAY
     const scale = DISPLAY / fh;
-    const bgW = Math.round(fw * f * scale);
-    const bgH = DISPLAY;
+    const bgW = p.frames[stateKey].sheetW ? Math.round(p.frames[stateKey].sheetW * scale) : Math.round(fw * f * scale);
+    const bgH = p.frames[stateKey].sheetH ? Math.round(p.frames[stateKey].sheetH * scale) : DISPLAY;
     const stepW = Math.round(fw * scale); // expected == DISPLAY when fw == fh
+    const animDistance = Math.round(fw * f * scale); // Distance to cover f frames
     
     p.el.style.backgroundImage = `var(--anim-${stateKey})`;
     p.el.style.backgroundSize = `${bgW}px ${bgH}px`;
+    
+    if (p.frames[stateKey].offsetY !== undefined) {
+        p.el.style.backgroundPositionY = `${-Math.round(p.frames[stateKey].offsetY * scale)}px`;
+    } else {
+        p.el.style.backgroundPositionY = `0px`;
+    }
     const dur = Math.max(0.4, f * 0.1).toFixed(2);
     
-    // Dynamic keyframe end position based on actual scaled sheet width
-    p.el.style.setProperty('--sprite-step-w', `${-bgW}px`);
+    // Dynamic keyframe end position based on frames to animate
+    p.el.style.setProperty('--sprite-step-w', `${-animDistance}px`);
     
     if (stateKey === 'dead') {
         p.el.style.animation = `bloodFade 2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, sprite-cycle ${dur}s steps(${f}) 1 forwards`;
@@ -208,7 +215,12 @@ function addPlayer(name) {
     
     // Avatar filename: {color}_{class}.png — all lowercase
     // e.g. blue_warrior.png, red_lancer.png, purple_monk.png
-    const avatar = `assets/avatars/${color.toLowerCase()}_${unitClass.toLowerCase()}.png`;
+    let avatar = `assets/avatars/${color.toLowerCase()}_${unitClass.toLowerCase()}.png`;
+    
+    let specialName = name.trim().toLowerCase();
+    if (specialName === 'junnieboy' || specialName === 'lowe') {
+        avatar = `assets/Torch_Blue_avatar.png`;
+    }
     
     participants.push({ pId: Date.now() + Math.random(), name: name.trim(), color, unitClass, avatar });
     saveParticipants();
@@ -327,8 +339,14 @@ function initArena(p1Override, p2Override) {
         p1Override.active = true;
         p2Override.active = true;
     } else {
-        // Battle Royale
+        // Battle Royale or Duck Race
         activeParticipants = participants;
+    }
+
+    if (currentGameMode === 'duck_race') {
+        arena.classList.add('duck-race-arena');
+    } else {
+        arena.classList.remove('duck-race-arena');
     }
 
     START_PLAYER_COUNT = activeParticipants.length;
@@ -341,17 +359,61 @@ function initArena(p1Override, p2Override) {
         // Initialize base class
         el.className = `participant state-run`;
         
-        // Inject Dynamic Medieval Assets
+        let isSpecial = false;
+        let specialName = p.name.trim().toLowerCase();
+        if (specialName === 'junnieboy' || specialName === 'lowe') {
+            isSpecial = true;
+            p.avatar = 'assets/Torch_Blue_avatar.png';
+        }
+
         const sprites = SPRITE_MAP[p.unitClass];
-        el.style.setProperty('--anim-idle', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.idle.file}')`);
-        el.style.setProperty('--anim-run', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.run.file}')`);
-        el.style.setProperty('--anim-attack', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.attack.file}')`);
-        el.style.setProperty('--anim-dead', `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.dead.file}')`);
+        let visualScale = sprites._visualScale || 1.0;
+        let hpValue = (p1Override && p2Override) ? 1 : 3;
+        let animIdle, animRun, animAttack, animDead;
+        
+        let framesConfig = {
+            idle:   { count: sprites.idle.frames,   frameW: sprites.idle.frameW,   frameH: sprites.idle.frameH },
+            run:    { count: sprites.run.frames,    frameW: sprites.run.frameW,    frameH: sprites.run.frameH },
+            attack: { count: sprites.attack.frames, frameW: sprites.attack.frameW, frameH: sprites.attack.frameH },
+            dead:   { count: sprites.dead.frames,   frameW: sprites.dead.frameW,   frameH: sprites.dead.frameH }
+        };
+
+        if (isSpecial) {
+            visualScale = 2.5; // Make character bigger
+            hpValue = (p1Override && p2Override) ? 1 : 5; // 5 lives
+            const torchFile = `url('assets/Torch_Blue.png')`;
+            animIdle = torchFile;
+            animRun = torchFile;
+            animAttack = torchFile;
+            animDead = torchFile;
+            
+            framesConfig = {
+                idle:   { count: 7, frameW: 192, frameH: 192, sheetW: 1344, sheetH: 960, offsetY: 0 },
+                run:    { count: 6, frameW: 192, frameH: 192, sheetW: 1344, sheetH: 960, offsetY: 192 },
+                attack: { count: 6, frameW: 192, frameH: 192, sheetW: 1344, sheetH: 960, offsetY: 384 },
+                dead:   { count: 7, frameW: 192, frameH: 192, sheetW: 1344, sheetH: 960, offsetY: 768 }
+            };
+        } else {
+            animIdle = `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.idle.file}')`;
+            animRun = `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.run.file}')`;
+            animAttack = `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.attack.file}')`;
+            animDead = `url('assets/Units/${p.color} Units/${p.unitClass}/${sprites.dead.file}')`;
+        }
+
+        // Inject Dynamic Medieval Assets
+        el.style.setProperty('--anim-idle', animIdle);
+        el.style.setProperty('--anim-run', animRun);
+        el.style.setProperty('--anim-attack', animAttack);
+        el.style.setProperty('--anim-dead', animDead);
         
         // Health Bar
         const healthBar = document.createElement('div');
         healthBar.className = 'health-bar';
-        healthBar.innerHTML = '<div class="health-segment"></div><div class="health-segment"></div><div class="health-segment"></div>';
+        let healthHTML = '';
+        for (let i = 0; i < hpValue; i++) {
+            healthHTML += '<div class="health-segment"></div>';
+        }
+        healthBar.innerHTML = healthHTML;
         el.appendChild(healthBar);
         
         // Label
@@ -361,6 +423,11 @@ function initArena(p1Override, p2Override) {
         label.style.color = COLOR_HEXMAP[p.color];
         label.style.textShadow = `-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 5px ${COLOR_HEXMAP[p.color]}`;
         el.appendChild(label);
+        
+        if (isSpecial) {
+            label.style.bottom = '40px';
+            healthBar.style.bottom = '30px';
+        }
         
         // Positon logic
         let x, y;
@@ -376,14 +443,30 @@ function initArena(p1Override, p2Override) {
             // Sideway only movement
             vx = (index === 0) ? SPEED : -SPEED;
             vy = 0;
+        } else if (currentGameMode === 'duck_race') {
+            const laneHeight = 960 / activeParticipants.length;
+            x = 10 + (Math.random() * 20); // slight random start offset
+            y = (index * laneHeight) + (laneHeight / 2) - (AVATAR_SIZE / 2);
+            vx = SPEED;
+            vy = 0;
         } else {
-            // Random start position within bounds
-            x = Math.random() * (960 - AVATAR_SIZE);
-            y = Math.random() * (960 - AVATAR_SIZE);
+            // Battle Royale Placement - Spread out along the perimeter facing the center
+            const total = activeParticipants.length;
+            const spawnAngle = (index / total) * Math.PI * 2;
             
-            // Random direction
-            vx = Math.cos(angle) * SPEED;
-            vy = Math.sin(angle) * SPEED;
+            // Center of the arena
+            const cx = 960 / 2;
+            const cy = 960 / 2;
+            
+            // Radius to place them far out (near the edges)
+            const spawnRadius = 400; // Almost at the edge of the 960x960 arena
+            
+            x = cx + Math.cos(spawnAngle) * spawnRadius - (AVATAR_SIZE / 2);
+            y = cy + Math.sin(spawnAngle) * spawnRadius - (AVATAR_SIZE / 2);
+            
+            // Move directly towards the center
+            vx = -Math.cos(spawnAngle) * SPEED;
+            vy = -Math.sin(spawnAngle) * SPEED;
         }
         
         arena.appendChild(el);
@@ -403,19 +486,16 @@ function initArena(p1Override, p2Override) {
             dashing: false,
             source: p,
             kills: p.kills || 0,
-            hp: (p1Override && p2Override) ? 1 : 3, // 1 HP for Tournament, 3 for BR
+            hp: hpValue, // 1 HP for Tournament, 3 for BR (5 for special)
+            maxHp: hpValue,
+            idleAnimFile: animIdle, // store for winner screen
             isFighting: false,
             cooldown: false,
             forceFlip: false,
             currentState: 'none',
             currentClass: 'participant state-run',
-            visualScale: sprites._visualScale || 1.0,
-            frames: {
-                idle:   { count: sprites.idle.frames,   frameW: sprites.idle.frameW,   frameH: sprites.idle.frameH },
-                run:    { count: sprites.run.frames,    frameW: sprites.run.frameW,    frameH: sprites.run.frameH },
-                attack: { count: sprites.attack.frames, frameW: sprites.attack.frameW, frameH: sprites.attack.frameH },
-                dead:   { count: sprites.dead.frames,   frameW: sprites.dead.frameW,   frameH: sprites.dead.frameH }
-            }
+            visualScale: visualScale,
+            frames: framesConfig
         };
         updateParticipantState(participantObj, 'run');
         updateHealthUI(participantObj); // Sync health view
@@ -433,7 +513,7 @@ function initArena(p1Override, p2Override) {
             <img src="${p.avatar}" class="score-avatar" style="border: 2px solid ${COLOR_HEXMAP[p.color]};">
             <div class="score-name" style="color: ${COLOR_HEXMAP[p.color]}">${p.name}</div>
             <div class="score-hp" id="score-hp-${p.id}" style="color: #27ae60; margin: 0 5px; font-size: 0.9em; font-family: monospace;">
-                ${'♥'.repeat(p.hp)}${'♡'.repeat(3 - p.hp)}
+                ${'♥'.repeat(p.hp)}${'♡'.repeat(Math.max(0, p.maxHp - p.hp))}
             </div>
             <div class="score-kills" id="score-kills-${p.id}">⚔️ ${p.kills}</div>
         `;
@@ -472,35 +552,72 @@ function initArena(p1Override, p2Override) {
 
 function gameLoop(loopParticipants) {
     if (!gameSession.classList.contains('hidden') && !countdownActive) {
-        // Movement and bounds
-        loopParticipants.forEach(p => {
-        if (!p.active || p.isFighting) return;
-        
-        p.x += p.vx;
-        p.y += p.vy;
-        
-        if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
-        if (p.x + AVATAR_SIZE > 960) { p.x = 960 - AVATAR_SIZE; p.vx = -Math.abs(p.vx); }
-        if (p.y < 0) { p.y = 0; p.vy = Math.abs(p.vy); }
-        if (p.y + AVATAR_SIZE > 960) { p.y = 960 - AVATAR_SIZE; p.vy = -Math.abs(p.vy); }
-    });
-
-    // Collision Pass
-    for (let i = 0; i < loopParticipants.length; i++) {
-        for (let j = i + 1; j < loopParticipants.length; j++) {
-            const p1 = loopParticipants[i];
-            const p2 = loopParticipants[j];
-            
-            if (p1.active && p2.active && !p1.isFighting && !p2.isFighting && !p1.cooldown && !p2.cooldown) {
-                const dx = p1.x - p2.x;
-                const dy = p1.y - p2.y;
+        if (currentGameMode === 'duck_race') {
+            loopParticipants.forEach(p => {
+                if (!p.active) return;
                 
-                if (dx * dx + dy * dy < 3600) {
-                    startFight(p1, p2, loopParticipants);
+                // Initialize thrill mechanics (even slower base speed)
+                if (p.raceSpeed === undefined) {
+                    p.raceSpeed = 0.2;
+                    p.raceTarget = 0.2;
+                }
+
+                // 2% chance every frame to dramatically change speed
+                if (Math.random() < 0.02) {
+                    // Speeds range from snail pace (0.05) to a slow jog (0.8) for roughly 30-second races
+                    p.raceTarget = 0.05 + (Math.random() * 0.75);
+                }
+
+                // Smoothly interpolate current speed towards target speed for realistic bursts/slowdowns
+                p.raceSpeed += (p.raceTarget - p.raceSpeed) * 0.05;
+
+                p.vx = p.raceSpeed;
+                p.x += p.vx;
+                
+                // Check win condition
+                if (p.x >= 960 - AVATAR_SIZE - 20) {
+                    // Turn off others and stop their animation
+                    loopParticipants.forEach(o => { 
+                        if (o !== p) {
+                            o.active = false; 
+                            o.el.classList.remove('mount-active');
+                            updateParticipantState(o, 'idle');
+                        }
+                    });
+                    declareWinner();
+                }
+            });
+        } else {
+            // Movement and bounds
+            loopParticipants.forEach(p => {
+            if (!p.active || p.isFighting) return;
+            
+            p.x += p.vx;
+            p.y += p.vy;
+            
+            if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
+            if (p.x + AVATAR_SIZE > 960) { p.x = 960 - AVATAR_SIZE; p.vx = -Math.abs(p.vx); }
+            if (p.y < 0) { p.y = 0; p.vy = Math.abs(p.vy); }
+            if (p.y + AVATAR_SIZE > 960) { p.y = 960 - AVATAR_SIZE; p.vy = -Math.abs(p.vy); }
+        });
+
+        // Collision Pass
+        for (let i = 0; i < loopParticipants.length; i++) {
+            for (let j = i + 1; j < loopParticipants.length; j++) {
+                const p1 = loopParticipants[i];
+                const p2 = loopParticipants[j];
+                
+                if (p1.active && p2.active && !p1.isFighting && !p2.isFighting && !p1.cooldown && !p2.cooldown) {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    
+                    if (dx * dx + dy * dy < 3600) {
+                        startFight(p1, p2, loopParticipants);
+                    }
                 }
             }
         }
-    }
+        }
     }
 
     // Render pass
@@ -515,11 +632,16 @@ function gameLoop(loopParticipants) {
             stateClass = p.isFighting ? 'state-attack' : 'state-run';
             stateKey = p.isFighting ? 'attack' : 'run';
             flipped = p.isFighting ? p.forceFlip : (p.vx < 0);
+            
+            if (currentGameMode === 'duck_race') {
+                flipped = false; // Always face right
+            }
         }
         
         let extraClass = '';
         if (p.dashing) extraClass += ' dashing';
         if (p.cooldown) extraClass += ' cooldown';
+        if (currentGameMode === 'duck_race') extraClass += ' mount-active';
 
         const newClassName = `participant ${stateClass}${extraClass}`;
         if (p.currentClass !== newClassName) {
@@ -582,7 +704,16 @@ function startFight(p1, p2, loopParticipants) {
 function resolveFight(p1, p2, loopParticipants) {
     if (!p1.active || !p2.active) return;
     
-    const p1Loses = Math.random() > 0.5;
+    let p1Loses = Math.random() > 0.5;
+    
+    if (currentGameMode === 'bracket') {
+        const p1Special = p1.name.toLowerCase() === 'junnieboy' || p1.name.toLowerCase() === 'lowe';
+        const p2Special = p2.name.toLowerCase() === 'junnieboy' || p2.name.toLowerCase() === 'lowe';
+        
+        if (p1Special && !p2Special) p1Loses = false;
+        else if (p2Special && !p1Special) p1Loses = true;
+    }
+    
     const loser = p1Loses ? p1 : p2;
     const winner = p1Loses ? p2 : p1;
     
@@ -644,7 +775,8 @@ function resetFighter(p) {
 function updateHealthUI(p) {
     const scoreHpEl = document.getElementById(`score-hp-${p.id}`);
     if (scoreHpEl) {
-        scoreHpEl.textContent = '♥'.repeat(Math.max(0, p.hp)) + '♡'.repeat(Math.max(0, 3 - p.hp));
+        const maxHp = p.maxHp || 3;
+        scoreHpEl.textContent = '♥'.repeat(Math.max(0, p.hp)) + '♡'.repeat(Math.max(0, maxHp - p.hp));
         
         if (p.hp <= 1) scoreHpEl.style.color = "#c0392b";
         else if (p.hp === 2) scoreHpEl.style.color = "#f39c12";
@@ -684,6 +816,7 @@ function declareWinner() {
     
     if (winner) {
         winner.el.classList.add('champion');
+        winner.el.classList.remove('mount-active');
         // Center the winner
         const arenaRect = arena.getBoundingClientRect();
         winner.x = arenaRect.width / 2 - AVATAR_SIZE / 2;
@@ -699,17 +832,25 @@ function declareWinner() {
         
         // Show winner modal using CSS classes
         winnerAvatarEl.className = `participant state-idle`;
-        const winnerSprites = SPRITE_MAP[winner.unitClass];
-        winnerAvatarEl.style.setProperty('--anim-idle', `url('assets/Units/${winner.color} Units/${winner.unitClass}/${winnerSprites.idle.file}')`);
-        const f  = winnerSprites.idle.frames;
-        const fw = winnerSprites.idle.frameW;
-        const fh = winnerSprites.idle.frameH;
+        winnerAvatarEl.classList.remove('mount-active');
+        winnerAvatarEl.style.setProperty('--anim-idle', winner.idleAnimFile);
+        const f  = winner.frames.idle.count;
+        const fw = winner.frames.idle.frameW;
+        const fh = winner.frames.idle.frameH;
         const scale = 144 / fh;
-        const bgW = Math.round(fw * f * scale);
+        const bgW = winner.frames.idle.sheetW ? Math.round(winner.frames.idle.sheetW * scale) : Math.round(fw * f * scale);
+        const bgH = winner.frames.idle.sheetH ? Math.round(winner.frames.idle.sheetH * scale) : 144;
+        
         winnerAvatarEl.style.backgroundImage = `var(--anim-idle)`;
-        winnerAvatarEl.style.backgroundSize = `${bgW}px 144px`;
+        winnerAvatarEl.style.backgroundSize = `${bgW}px ${bgH}px`;
+        if (winner.frames.idle.offsetY !== undefined) {
+            winnerAvatarEl.style.backgroundPositionY = `${-Math.round(winner.frames.idle.offsetY * scale)}px`;
+        } else {
+            winnerAvatarEl.style.backgroundPositionY = `0px`;
+        }
         const dur = Math.max(0.4, f * 0.1).toFixed(2);
-        winnerAvatarEl.style.setProperty('--sprite-step-w', `${-bgW}px`);
+        const animDistance = Math.round(fw * f * scale);
+        winnerAvatarEl.style.setProperty('--sprite-step-w', `${-animDistance}px`);
         winnerAvatarEl.style.animation = `championPulse 2s infinite, sprite-cycle ${dur}s steps(${f}) infinite`;
         
         // Use visualScale for the winner character art
@@ -940,19 +1081,43 @@ function declareTournamentChampion(winner) {
     document.querySelector('.winner-title').innerHTML = `TOURNAMENT CHAMPION<br/>${winner.name}`;
     
     winnerAvatarEl.className = `participant state-idle`;
-    const winnerSprites = SPRITE_MAP[winner.unitClass];
-    winnerAvatarEl.style.setProperty('--anim-idle', `url('assets/Units/${winner.color} Units/${winner.unitClass}/${winnerSprites.idle.file}')`);
-    const f  = winnerSprites.idle.frames;
-    const fw = winnerSprites.idle.frameW;
-    const fh = winnerSprites.idle.frameH;
-    const scale = 144 / fh;
-    const bgW = Math.round(fw * f * scale);
-    winnerAvatarEl.style.backgroundImage = `var(--anim-idle)`;
-    winnerAvatarEl.style.backgroundSize = `${bgW}px 144px`;
-    const dur = Math.max(0.4, f * 0.1).toFixed(2);
-    winnerAvatarEl.style.setProperty('--sprite-step-w', `${-bgW}px`);
-    winnerAvatarEl.style.animation = `championPulse 2s infinite, sprite-cycle ${dur}s steps(${f}) infinite`;
     
-    const vs = winnerSprites._visualScale || 1.0;
-    winnerAvatarEl.style.transform = `scale(${1.5 * vs})`;
+    const isSpecial = winner.name.toLowerCase() === 'junnieboy' || winner.name.toLowerCase() === 'lowe';
+    
+    if (isSpecial) {
+        winnerAvatarEl.style.setProperty('--anim-idle', `url('assets/Torch_Blue.png')`);
+        const f  = 7;
+        const fw = 192;
+        const fh = 192;
+        const sheetW = 1344;
+        const sheetH = 960;
+        const scale = 144 / fh;
+        const bgW = Math.round(sheetW * scale);
+        const bgH = Math.round(sheetH * scale);
+        winnerAvatarEl.style.backgroundImage = `var(--anim-idle)`;
+        winnerAvatarEl.style.backgroundSize = `${bgW}px ${bgH}px`;
+        winnerAvatarEl.style.backgroundPositionY = `0px`;
+        const dur = Math.max(0.4, f * 0.1).toFixed(2);
+        const animDistance = Math.round(fw * f * scale);
+        winnerAvatarEl.style.setProperty('--sprite-step-w', `${-animDistance}px`);
+        winnerAvatarEl.style.animation = `championPulse 2s infinite, sprite-cycle ${dur}s steps(${f}) infinite`;
+        winnerAvatarEl.style.transform = `scale(${1.5 * 2.5})`;
+    } else {
+        const winnerSprites = SPRITE_MAP[winner.unitClass];
+        winnerAvatarEl.style.setProperty('--anim-idle', `url('assets/Units/${winner.color} Units/${winner.unitClass}/${winnerSprites.idle.file}')`);
+        const f  = winnerSprites.idle.frames;
+        const fw = winnerSprites.idle.frameW;
+        const fh = winnerSprites.idle.frameH;
+        const scale = 144 / fh;
+        const bgW = Math.round(fw * f * scale);
+        winnerAvatarEl.style.backgroundImage = `var(--anim-idle)`;
+        winnerAvatarEl.style.backgroundSize = `${bgW}px 144px`;
+        winnerAvatarEl.style.backgroundPositionY = `0px`;
+        const dur = Math.max(0.4, f * 0.1).toFixed(2);
+        winnerAvatarEl.style.setProperty('--sprite-step-w', `${-bgW}px`);
+        winnerAvatarEl.style.animation = `championPulse 2s infinite, sprite-cycle ${dur}s steps(${f}) infinite`;
+        
+        const vs = winnerSprites._visualScale || 1.0;
+        winnerAvatarEl.style.transform = `scale(${1.5 * vs})`;
+    }
 }
