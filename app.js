@@ -495,7 +495,8 @@ function initArena(p1Override, p2Override) {
             currentState: 'none',
             currentClass: 'participant state-run',
             visualScale: visualScale,
-            frames: framesConfig
+            frames: framesConfig,
+            isSpecial: isSpecial
         };
         updateParticipantState(participantObj, 'run');
         updateHealthUI(participantObj); // Sync health view
@@ -739,11 +740,8 @@ function resolveFight(p1, p2, loopParticipants) {
     let p1Loses = Math.random() > 0.5;
     
     if (currentGameMode === 'bracket') {
-        const p1Special = p1.name.toLowerCase() === 'junnieboy' || p1.name.toLowerCase() === 'lowe';
-        const p2Special = p2.name.toLowerCase() === 'junnieboy' || p2.name.toLowerCase() === 'lowe';
-        
-        if (p1Special && !p2Special) p1Loses = false;
-        else if (p2Special && !p1Special) p1Loses = true;
+        if (p1.isSpecial && !p2.isSpecial) p1Loses = false;
+        else if (p2.isSpecial && !p1.isSpecial) p1Loses = true;
     }
     
     const loser = p1Loses ? p1 : p2;
@@ -763,8 +761,7 @@ function resolveFight(p1, p2, loopParticipants) {
         winner.kills++;
         
         // Special character lifesteal mechanic
-        const isSpecialWinner = winner.name.toLowerCase() === 'junnieboy' || winner.name.toLowerCase() === 'lowe';
-        if (isSpecialWinner && winner.hp < winner.maxHp) {
+        if (winner.isSpecial && winner.hp < winner.maxHp) {
             winner.hp += 1;
             updateHealthUI(winner);
         }
